@@ -8,6 +8,7 @@ const {
 } = require('../models/userModel');
 const { getClubByCode } = require('../models/clubModel');
 const { getPlayersByTeam } = require('../models/playerModel');
+const { getTeamsByClub } = require('../models/clubTeamModel');
 
 const router = express.Router();
 
@@ -152,12 +153,18 @@ router.post('/logout', ensureAuth, (req, res) => {
 router.get('/account', ensureAuth, async (req, res) => {
   try {
     const user = await findUserById(req.session.user.id);
-    const isSuperAdmin = req.session.user.role === 'superadmin';
-    const clubFilter = isSuperAdmin ? null : user.default_club || null;
-    const teams = await getPlayersByTeam(null, clubFilter);
-    const uniqueTeams = Array.from(
-      new Set(teams.map((p) => p.team).filter((t) => t && t.trim())),
-    ).sort();
+    const clubFilter = user.default_club || null;
+
+    let uniqueTeams = [];
+    if (clubFilter) {
+      const clubTeams = await getTeamsByClub(clubFilter);
+      uniqueTeams = clubTeams.map((t) => t.name);
+    } else {
+      const players = await getPlayersByTeam(null, null);
+      uniqueTeams = Array.from(
+        new Set(players.map((p) => p.team).filter((t) => t && t.trim())),
+      ).sort();
+    }
 
     return res.render('auth/account', {
       user,

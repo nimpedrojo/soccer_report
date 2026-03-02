@@ -117,6 +117,17 @@ async function deleteUser(id) {
   return result.affectedRows;
 }
 
+async function countAdminsByClub(club) {
+  if (!club) {
+    return 0;
+  }
+  const [rows] = await db.query(
+    'SELECT COUNT(*) AS total FROM users WHERE default_club = ? AND role = \'admin\'',
+    [club],
+  );
+  return rows[0] ? rows[0].total : 0;
+}
+
 async function ensureAdminUser() {
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@local';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
@@ -143,4 +154,5 @@ module.exports = {
   updateUserRole,
   deleteUser,
   ensureAdminUser,
+  countAdminsByClub,
 };

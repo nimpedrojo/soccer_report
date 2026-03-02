@@ -1,5 +1,12 @@
 <h1 class="mb-4">Base de jugadores</h1>
 
+<div class="mb-3 d-flex gap-2">
+  <a href="/admin/players/new" class="btn btn-primary">Nuevo jugador</a>
+  <a href="/admin/players/import" class="btn btn-outline-secondary">
+    Importar desde Excel
+  </a>
+</div>
+
 <% if (!players || !players.length) { %>
 <p>No hay jugadores registrados.</p>
 <% } else { %>
@@ -88,4 +95,3 @@
     });
   })();
 </script>
-

@@ -1,0 +1,173 @@
+<h1 class="mb-4">Configuración del club: <%= club %></h1>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        Usuarios del club
+      </div>
+      <div class="card-body">
+        <% if (!users || !users.length) { %>
+          <p class="text-muted mb-2">No hay usuarios asociados a este club.</p>
+        <% } else { %>
+          <ul class="list-group list-group-flush mb-3">
+            <% users.forEach(function(u) { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                  <strong><%= u.name %></strong>
+                  <small class="text-muted d-block"><%= u.email %></small>
+                </span>
+                <span class="badge bg-secondary text-uppercase">
+                  <%= u.role %>
+                </span>
+              </li>
+            <% }); %>
+          </ul>
+        <% } %>
+        <a href="/admin/users" class="btn btn-outline-secondary btn-sm">
+          Gestionar usuarios
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        Equipos del club
+      </div>
+      <div class="card-body">
+        <% if (!teams || !teams.length) { %>
+          <p class="text-muted mb-2">Todavía no hay equipos dados de alta para este club.</p>
+        <% } else { %>
+          <ul class="list-group list-group-flush mb-3">
+            <% teams.forEach(function(t) { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <form
+                  class="d-flex flex-grow-1 gap-2 align-items-center"
+                  method="POST"
+                  action="/admin/club/teams/<%= t.id %>/rename"
+                >
+                  <input
+                    type="text"
+                    name="name"
+                    class="form-control form-control-sm"
+                    value="<%= t.name %>"
+                  />
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-primary"
+                  >
+                    Guardar
+                  </button>
+                </form>
+                <form
+                  method="POST"
+                  action="/admin/club/teams/<%= t.id %>/delete"
+                  onsubmit="return confirm('¿Seguro que quieres borrar este equipo?');"
+                >
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-danger"
+                  >
+                    Borrar
+                  </button>
+                </form>
+              </li>
+            <% }); %>
+          </ul>
+        <% } %>
+
+        <form method="POST" action="/admin/club/teams" class="row g-2 align-items-center">
+          <div class="col-8">
+            <input
+              type="text"
+              name="name"
+              class="form-control form-control-sm"
+              placeholder="Nuevo equipo"
+              required
+            />
+          </div>
+          <div class="col-4 d-grid">
+            <button type="submit" class="btn btn-sm btn-primary">
+              Añadir equipo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        Jugadores del club
+      </div>
+      <div class="card-body">
+        <% if (!players || !players.length) { %>
+          <p class="text-muted mb-2">No hay jugadores registrados para este club.</p>
+        <% } else { %>
+          <p class="text-muted mb-2">
+            Total jugadores: <strong><%= players.length %></strong>
+          </p>
+          <ul class="list-group list-group-flush mb-3">
+            <% players.slice(0, 5).forEach(function(p) { %>
+              <li class="list-group-item">
+                <strong><%= p.first_name %> <%= p.last_name %></strong>
+                <small class="text-muted d-block">
+                  <%= p.team || 'Sin equipo' %>
+                </small>
+              </li>
+            <% }); %>
+          </ul>
+          <% if (players.length > 5) { %>
+            <p class="text-muted small">
+              Mostrando los 5 primeros jugadores.
+            </p>
+          <% } %>
+        <% } %>
+        <a href="/admin/players" class="btn btn-outline-secondary btn-sm">
+          Gestionar jugadores
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        Informes del club
+      </div>
+      <div class="card-body">
+        <% if (!reports || !reports.length) { %>
+          <p class="text-muted mb-2">No hay informes registrados para este club.</p>
+        <% } else { %>
+          <p class="text-muted mb-2">
+            Total informes: <strong><%= reports.length %></strong>
+          </p>
+          <ul class="list-group list-group-flush mb-3">
+            <% reports.slice(0, 5).forEach(function(r) { %>
+              <li class="list-group-item">
+                <strong><%= r.player_name %> <%= r.player_surname %></strong>
+                <small class="text-muted d-block">
+                  <%= r.team || '' %> · <%= r.year || '' %>
+                </small>
+              </li>
+            <% }); %>
+          </ul>
+          <% if (reports.length > 5) { %>
+            <p class="text-muted small">
+              Mostrando los 5 primeros informes.
+            </p>
+          <% } %>
+        <% } %>
+        <a href="/reports" class="btn btn-outline-secondary btn-sm">
+          Gestionar informes
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+

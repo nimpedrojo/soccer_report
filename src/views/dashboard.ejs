@@ -103,6 +103,25 @@
     </a>
   </div>
 
+  <!-- Configuración de club (admin y superadmin con club) -->
+  <div class="col-sm-6 col-lg-3">
+    <a href="/admin/club" class="text-decoration-none text-reset">
+      <div class="card h-100 shadow-sm">
+        <img
+          src="/img/list.svg"
+          class="card-img-top icon-dashboard p-3"
+          alt="Configuración de club"
+        />
+        <div class="card-body">
+          <h5 class="card-title">Club</h5>
+          <p class="card-text">
+            Configuración del club: equipos, usuarios, jugadores e informes.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+
   <% if (currentUser && currentUser.role === 'superadmin') { %>
   <!-- Gestión de clubes (solo superadmin) -->
   <div class="col-sm-6 col-lg-3">

@@ -508,4 +508,82 @@ describe('Aplicación SoccerReport', () => {
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error');
   });
+
+  test('un admin de club puede ver la página de configuración de su club', async () => {
+    const { email } = await createTestUser({
+      name: 'Club Admin',
+      role: 'admin',
+      defaultClub: 'Club Config',
+    });
+
+    const agent = request.agent(app);
+    await agent.post('/login').send({ email, password: 'password123' });
+
+    const res = await agent.get('/admin/club');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Configuración del club: Club Config');
+  });
+
+  test('la configuración de club muestra usuarios, jugadores e informes filtrados por club', async () => {
+    const clubName = 'Club Config Data';
+    const admin = await createTestUser({
+      name: 'Club Admin Data',
+      role: 'admin',
+      defaultClub: clubName,
+    });
+
+    // Usuario de mismo club
+    await createTestUser({
+      name: 'User Same Club',
+      role: 'user',
+      defaultClub: clubName,
+    });
+    // Jugador del club
+    await db.query(
+      'INSERT INTO players (first_name, last_name, club) VALUES (?, ?, ?)',
+      ['JugadorClub', 'Test', clubName],
+    );
+    // Informe del club
+    await db.query(
+      'INSERT INTO reports (player_name, player_surname, club) VALUES (?, ?, ?)',
+      ['JugadorInforme', 'Test', clubName],
+    );
+
+    const agent = request.agent(app);
+    await agent
+      .post('/login')
+      .send({ email: admin.email, password: 'password123' });
+
+    const res = await agent.get('/admin/club');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('User Same Club');
+    expect(res.text).toContain('JugadorClub');
+    expect(res.text).toContain('JugadorInforme');
+  });
+
+  test('un admin puede crear y gestionar equipos de su club', async () => {
+    const clubName = 'Club Equipos';
+    const admin = await createTestUser({
+      name: 'Club Admin Equipos',
+      role: 'admin',
+      defaultClub: clubName,
+    });
+
+    const agent = request.agent(app);
+    await agent
+      .post('/login')
+      .send({ email: admin.email, password: 'password123' });
+
+    // Crear equipo
+    const resCreate = await agent.post('/admin/club/teams').send({
+      name: 'Equipo A',
+    });
+    expect(resCreate.status).toBe(302);
+    expect(resCreate.headers.location).toBe('/admin/club');
+
+    // Página debería mostrar el equipo
+    const resConfig = await agent.get('/admin/club');
+    expect(resConfig.status).toBe(200);
+    expect(resConfig.text).toContain('Equipo A');
+  });
 });

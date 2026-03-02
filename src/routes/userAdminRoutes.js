@@ -5,8 +5,10 @@ const {
   deleteUser,
   findUserById,
   updateUserAccount,
+  countAdminsByClub,
 } = require('../models/userModel');
 const { getPlayersByTeam } = require('../models/playerModel');
+const { getTeamsByClub } = require('../models/clubTeamModel');
 
 const router = express.Router();
 
@@ -56,6 +58,22 @@ router.post('/:id/role', ensureAdmin, async (req, res) => {
     if (!targetUser) {
       req.flash('error', 'Usuario no encontrado.');
       return res.redirect('/admin/users');
+    }
+
+    // Garantizar que no se queda el club sin admins
+    if (
+      targetUser.role === 'admin'
+      && role !== 'admin'
+      && targetUser.default_club
+    ) {
+      const totalAdmins = await countAdminsByClub(targetUser.default_club);
+      if (totalAdmins <= 1) {
+        req.flash(
+          'error',
+          'No puedes cambiar el rol de este usuario porque dejarías al club sin ningún administrador.',
+        );
+        return res.redirect('/admin/users');
+      }
     }
 
     if (!isSuperAdmin) {
@@ -123,6 +141,17 @@ router.post('/:id/delete', ensureAdmin, async (req, res) => {
       }
     }
 
+    // Garantizar que no se queda el club sin admins
+    if (targetUser.role === 'admin' && targetUser.default_club) {
+      const totalAdmins = await countAdminsByClub(targetUser.default_club);
+      if (totalAdmins <= 1) {
+        req.flash(
+          'error',
+          'No puedes borrar este usuario porque dejarías al club sin ningún administrador.',
+        );
+        return res.redirect('/admin/users');
+      }
+    }
     if (Number(id) === req.session.user.id) {
       req.flash('error', 'No puedes borrar tu propio usuario.');
       return res.redirect('/admin/users');
@@ -156,32 +185,48 @@ router.post('/bulk-delete', ensureAdmin, async (req, res) => {
     const isSuperAdmin = req.session.user.role === 'superadmin';
     const idsToDelete = [];
 
-    userIds
-      .map((id) => Number(id))
-      .filter((id) => Number.isInteger(id) && id !== req.session.user.id)
-      .forEach(async (userId) => {
-        const targetUser = await findUserById(userId);
+    // eslint-disable-next-line no-restricted-syntax
+    for (const rawId of userIds) {
+      const userId = Number(rawId);
+      if (!Number.isInteger(userId) || userId === req.session.user.id) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
 
-        if (!targetUser) {
-          return;
+      // eslint-disable-next-line no-await-in-loop
+      const targetUser = await findUserById(userId);
+      if (!targetUser) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      if (!isSuperAdmin) {
+        if (targetUser.role === 'superadmin') {
+          // eslint-disable-next-line no-continue
+          continue;
         }
 
-        if (!isSuperAdmin) {
-          if (targetUser.role === 'superadmin') {
-            return;
-          }
-
-          if (
-            req.session.user.default_club
-            && targetUser.default_club
-            && targetUser.default_club !== req.session.user.default_club
-          ) {
-            return;
-          }
+        if (
+          req.session.user.default_club
+          && targetUser.default_club
+          && targetUser.default_club !== req.session.user.default_club
+        ) {
+          // eslint-disable-next-line no-continue
+          continue;
         }
+      }
 
-        idsToDelete.push(userId);
-      });
+      if (targetUser.role === 'admin' && targetUser.default_club) {
+        // eslint-disable-next-line no-await-in-loop
+        const totalAdmins = await countAdminsByClub(targetUser.default_club);
+        if (totalAdmins <= 1) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+      }
+
+      idsToDelete.push(userId);
+    }
 
     // eslint-disable-next-line no-restricted-syntax
     for (const id of idsToDelete) {
@@ -232,10 +277,16 @@ router.get('/:id/edit', ensureAdmin, async (req, res) => {
         return res.redirect('/admin/users');
       }
     }
-    const teams = await getPlayersByTeam(null);
-    const uniqueTeams = Array.from(
-      new Set(teams.map((p) => p.team).filter((t) => t && t.trim())),
-    ).sort();
+    let uniqueTeams = [];
+    if (user.default_club) {
+      const clubTeams = await getTeamsByClub(user.default_club);
+      uniqueTeams = clubTeams.map((t) => t.name);
+    } else {
+      const players = await getPlayersByTeam(null, null);
+      uniqueTeams = Array.from(
+        new Set(players.map((p) => p.team).filter((t) => t && t.trim())),
+      ).sort();
+    }
 
     return res.render('users/edit', { user, teams: uniqueTeams });
   } catch (err) {

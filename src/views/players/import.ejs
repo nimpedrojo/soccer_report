@@ -1,0 +1,37 @@
+<h1 class="mb-4">Importar jugadores desde Excel</h1>
+
+<p class="mb-3">
+  Descarga primero la plantilla, rellena los datos de los jugadores y luego súbela de nuevo para importarlos a tu club.
+</p>
+
+<div class="mb-3">
+  <a href="/admin/players/template" class="btn btn-outline-secondary">
+    Descargar plantilla
+  </a>
+</div>
+
+<form
+  method="POST"
+  action="/admin/players/import"
+  enctype="multipart/form-data"
+  class="col-md-6"
+>
+  <div class="mb-3">
+    <label for="file" class="form-label">Fichero Excel (.xlsx)</label>
+    <input
+      type="file"
+      class="form-control"
+      id="file"
+      name="file"
+      accept=".xlsx"
+      required
+    />
+    <div class="form-text">
+      Utiliza la plantilla proporcionada. La primera fila debe mantener los nombres de columna originales.
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Importar jugadores</button>
+  <a href="/admin/players" class="btn btn-link">Cancelar</a>
+</form>
+
