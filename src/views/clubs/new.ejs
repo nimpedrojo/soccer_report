@@ -1,0 +1,31 @@
+<h1 class="mb-4">Nuevo club</h1>
+
+<form method="POST" action="/admin/clubs/new" class="col-md-5">
+  <div class="mb-3">
+    <label for="name" class="form-label">Nombre del club</label>
+    <input
+      type="text"
+      class="form-control"
+      id="name"
+      name="name"
+      required
+    />
+  </div>
+  <div class="mb-3">
+    <label for="code" class="form-label">Código de registro</label>
+    <input
+      type="text"
+      class="form-control"
+      id="code"
+      name="code"
+      required
+    />
+    <div class="form-text">
+      Comparte este código con los ojeadores del club; lo necesitarán en el registro para asociar su usuario a este club.
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Crear club</button>
+  <a href="/admin/clubs" class="btn btn-link">Volver</a>
+</form>
+

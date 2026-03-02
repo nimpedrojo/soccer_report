@@ -1,0 +1,46 @@
+<h1 class="mb-4">Gestión de clubes</h1>
+
+<div class="mb-3">
+  <a href="/admin/clubs/new" class="btn btn-primary">Nuevo club</a>
+</div>
+
+<table class="table table-striped align-middle">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Código</th>
+      <th>Creado</th>
+      <th class="text-end">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (clubs && clubs.length) { %>
+      <% clubs.forEach((club) => { %>
+        <tr>
+          <td><%= club.name %></td>
+          <td><code><%= club.code %></code></td>
+          <td><%= club.created_at.toISOString().slice(0, 10) %></td>
+          <td class="text-end">
+            <form
+              method="POST"
+              action="/admin/clubs/<%= club.id %>/delete"
+              class="d-inline"
+              onsubmit="return confirm('¿Seguro que quieres borrar este club?');"
+            >
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                Borrar
+              </button>
+            </form>
+          </td>
+        </tr>
+      <% }); %>
+    <% } else { %>
+      <tr>
+        <td colspan="4" class="text-center text-muted">
+          No hay clubes dados de alta.
+        </td>
+      </tr>
+    <% } %>
+  </tbody>
+</table>
+

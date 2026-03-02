@@ -27,7 +27,7 @@ async function createTestUser({
   return { id: result.insertId, email: userEmail, password };
 }
 
-describe('Aplicación de informes STV', () => {
+describe('Aplicación SoccerReport', () => {
   afterAll(async () => {
     await db.end();
   });

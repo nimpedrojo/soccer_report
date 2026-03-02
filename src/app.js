@@ -49,11 +49,13 @@ const authRoutes = require('./routes/authRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const userAdminRoutes = require('./routes/userAdminRoutes');
 const playerAdminRoutes = require('./routes/playerAdminRoutes');
+const clubAdminRoutes = require('./routes/clubAdminRoutes');
 
 app.use('/', authRoutes);
 app.use('/reports', reportRoutes);
 app.use('/admin/users', userAdminRoutes);
 app.use('/admin/players', playerAdminRoutes);
+app.use('/admin/clubs', clubAdminRoutes);
 
 app.get('/', (req, res) => {
   if (req.session.user) {

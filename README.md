@@ -1,4 +1,4 @@
-# Informes STV
+# SoccerReport
 
 Aplicación web sencilla para gestionar informes de ojeo / scouting de jugadores de fútbol. Construida con **Node.js**, **Express** y **EJS**, utiliza MySQL como base de datos y Bootstrap para la interfaz.
 
@@ -76,7 +76,7 @@ npm install
 - Usuario admin inicial (`ADMIN_EMAIL`, `ADMIN_PASSWORD` opcional).
 - Clave de sesión (`SESSION_SECRET`).
 
-3. Crear la base de datos vacía en MySQL (por ejemplo `informes_stv`).  
+3. Crear la base de datos vacía en MySQL (por ejemplo `soccer_report`).  
    Al arrancar la app se crearán las tablas necesarias si no existen.
 
 4. Ejecutar en desarrollo:

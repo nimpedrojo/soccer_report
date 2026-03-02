@@ -4,11 +4,10 @@ body {
     Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Colores inspirados en la web de Stadium Venecia:
-   rojo protagonista + blanco y grises suaves */
+/* Paleta azul para SoccerReport */
 :root {
-  --sv-red: #c1121f;
-  --sv-red-dark: #780000;
+  --sv-red: #0b3b8c; /* azul principal más oscuro */
+  --sv-red-dark: #082a63; /* azul oscuro más profundo */
   --sv-accent: #ffc107;
   --sv-text-dark: #1f2933;
 }
@@ -65,14 +64,14 @@ body {
 
 .card {
   border-radius: 0.75rem;
-  border: 1px solid rgba(120, 0, 0, 0.12);
+  border: 1px solid rgba(13, 110, 253, 0.12);
 }
 
 .card-header {
   background: linear-gradient(
     90deg,
-    rgba(193, 18, 31, 0.95),
-    rgba(120, 0, 0, 0.98)
+    rgba(13, 110, 253, 0.95),
+    rgba(11, 94, 215, 0.98)
   );
   color: #ffffff;
 }
@@ -82,12 +81,12 @@ body {
 }
 
 .table thead th {
-  background-color: rgba(193, 18, 31, 0.06);
-  border-bottom-color: rgba(193, 18, 31, 0.25);
+  background-color: rgba(13, 110, 253, 0.06);
+  border-bottom-color: rgba(13, 110, 253, 0.25);
 }
 
 .table-striped tbody tr:nth-of-type(odd) {
-  background-color: rgba(193, 18, 31, 0.015);
+  background-color: rgba(13, 110, 253, 0.015);
 }
 
 .pitch-container {

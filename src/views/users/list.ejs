@@ -55,6 +55,13 @@
               <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>
                 Admin
               </option>
+              <option
+                value="superadmin"
+                <%= u.role === 'superadmin' ? 'selected' : '' %>
+                <%= (!currentUser || currentUser.role !== 'superadmin') ? 'disabled' : '' %>
+              >
+                Superadmin
+              </option>
             </select>
             <% if (!currentUser || currentUser.id !== u.id) { %>
             <button type="submit" class="btn btn-sm btn-primary">

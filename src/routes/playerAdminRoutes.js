@@ -9,7 +9,11 @@ const {
 const router = express.Router();
 
 function ensureAdmin(req, res, next) {
-  if (!req.session.user || req.session.user.role !== 'admin') {
+  if (
+    !req.session.user
+    || (req.session.user.role !== 'admin'
+      && req.session.user.role !== 'superadmin')
+  ) {
     req.flash('error', 'No tienes permisos para acceder a esta sección.');
     return res.redirect('/');
   }
@@ -19,7 +23,9 @@ function ensureAdmin(req, res, next) {
 // Listado de jugadores
 router.get('/', ensureAdmin, async (req, res) => {
   try {
-    const players = await getAllPlayers();
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const players = await getAllPlayers(clubFilter);
     return res.render('players/list', { players });
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -33,7 +39,9 @@ router.get('/', ensureAdmin, async (req, res) => {
 router.get('/:id/edit', ensureAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const player = await getPlayerById(id);
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const player = await getPlayerById(id, clubFilter);
     if (!player) {
       req.flash('error', 'Jugador no encontrado.');
       return res.redirect('/admin/players');
@@ -92,6 +100,17 @@ router.post('/:id/edit', ensureAdmin, async (req, res) => {
 router.post('/:id/delete', ensureAdmin, async (req, res) => {
   const { id } = req.params;
   try {
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+
+    if (!isSuperAdmin) {
+      const player = await getPlayerById(id, clubFilter);
+      if (!player) {
+        req.flash('error', 'No se ha podido borrar el jugador.');
+        return res.redirect('/admin/players');
+      }
+    }
+
     const affected = await deletePlayer(id);
     if (!affected) {
       req.flash('error', 'No se ha podido borrar el jugador.');
@@ -121,9 +140,21 @@ router.post('/bulk-delete', ensureAdmin, async (req, res) => {
   }
 
   try {
-    const idsToDelete = playerIds
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+
+    const idsToDelete = [];
+
+    playerIds
       .map((id) => Number(id))
-      .filter((id) => Number.isInteger(id));
+      .filter((id) => Number.isInteger(id))
+      .forEach((id) => {
+        if (isSuperAdmin) {
+          idsToDelete.push(id);
+        } else {
+          idsToDelete.push(id);
+        }
+      });
 
     // eslint-disable-next-line no-restricted-syntax
     for (const id of idsToDelete) {
@@ -150,4 +181,3 @@ router.post('/bulk-delete', ensureAdmin, async (req, res) => {
 });
 
 module.exports = router;
-

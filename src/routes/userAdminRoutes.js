@@ -11,7 +11,11 @@ const { getPlayersByTeam } = require('../models/playerModel');
 const router = express.Router();
 
 function ensureAdmin(req, res, next) {
-  if (!req.session.user || req.session.user.role !== 'admin') {
+  if (
+    !req.session.user
+    || (req.session.user.role !== 'admin'
+      && req.session.user.role !== 'superadmin')
+  ) {
     req.flash('error', 'No tienes permisos para acceder a esta sección.');
     return res.redirect('/');
   }
@@ -21,7 +25,9 @@ function ensureAdmin(req, res, next) {
 // Listado de usuarios registrados
 router.get('/', ensureAdmin, async (req, res) => {
   try {
-    const users = await getAllUsers();
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const users = await getAllUsers(clubFilter);
     return res.render('users/list', { users, currentUser: req.session.user });
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -36,12 +42,38 @@ router.post('/:id/role', ensureAdmin, async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
 
-  if (!['user', 'admin'].includes(role)) {
+  const isSuperAdmin = req.session.user.role === 'superadmin';
+  const validRoles = isSuperAdmin ? ['user', 'admin', 'superadmin'] : ['user', 'admin'];
+
+  if (!validRoles.includes(role)) {
     req.flash('error', 'Rol no válido.');
     return res.redirect('/admin/users');
   }
 
   try {
+    const targetUser = await findUserById(id);
+
+    if (!targetUser) {
+      req.flash('error', 'Usuario no encontrado.');
+      return res.redirect('/admin/users');
+    }
+
+    if (!isSuperAdmin) {
+      if (targetUser.role === 'superadmin') {
+        req.flash('error', 'No puedes modificar un usuario superadmin.');
+        return res.redirect('/admin/users');
+      }
+
+      if (
+        req.session.user.default_club
+        && targetUser.default_club
+        && targetUser.default_club !== req.session.user.default_club
+      ) {
+        req.flash('error', 'No puedes modificar usuarios de otro club.');
+        return res.redirect('/admin/users');
+      }
+    }
+
     // Evitar que un admin se quite a sí mismo todos los permisos por accidente
     if (Number(id) === req.session.user.id && role !== 'admin') {
       req.flash(
@@ -67,6 +99,30 @@ router.post('/:id/delete', ensureAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const targetUser = await findUserById(id);
+
+    if (!targetUser) {
+      req.flash('error', 'Usuario no encontrado.');
+      return res.redirect('/admin/users');
+    }
+
+    if (!isSuperAdmin) {
+      if (targetUser.role === 'superadmin') {
+        req.flash('error', 'No puedes borrar un usuario superadmin.');
+        return res.redirect('/admin/users');
+      }
+
+      if (
+        req.session.user.default_club
+        && targetUser.default_club
+        && targetUser.default_club !== req.session.user.default_club
+      ) {
+        req.flash('error', 'No puedes borrar usuarios de otro club.');
+        return res.redirect('/admin/users');
+      }
+    }
+
     if (Number(id) === req.session.user.id) {
       req.flash('error', 'No puedes borrar tu propio usuario.');
       return res.redirect('/admin/users');
@@ -97,9 +153,35 @@ router.post('/bulk-delete', ensureAdmin, async (req, res) => {
   }
 
   try {
-    const idsToDelete = userIds
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const idsToDelete = [];
+
+    userIds
       .map((id) => Number(id))
-      .filter((id) => Number.isInteger(id) && id !== req.session.user.id);
+      .filter((id) => Number.isInteger(id) && id !== req.session.user.id)
+      .forEach(async (userId) => {
+        const targetUser = await findUserById(userId);
+
+        if (!targetUser) {
+          return;
+        }
+
+        if (!isSuperAdmin) {
+          if (targetUser.role === 'superadmin') {
+            return;
+          }
+
+          if (
+            req.session.user.default_club
+            && targetUser.default_club
+            && targetUser.default_club !== req.session.user.default_club
+          ) {
+            return;
+          }
+        }
+
+        idsToDelete.push(userId);
+      });
 
     // eslint-disable-next-line no-restricted-syntax
     for (const id of idsToDelete) {
@@ -129,10 +211,26 @@ router.post('/bulk-delete', ensureAdmin, async (req, res) => {
 router.get('/:id/edit', ensureAdmin, async (req, res) => {
   const { id } = req.params;
   try {
+    const isSuperAdmin = req.session.user.role === 'superadmin';
     const user = await findUserById(id);
     if (!user) {
       req.flash('error', 'Usuario no encontrado.');
       return res.redirect('/admin/users');
+    }
+    if (!isSuperAdmin) {
+      if (user.role === 'superadmin') {
+        req.flash('error', 'No puedes editar un usuario superadmin.');
+        return res.redirect('/admin/users');
+      }
+
+      if (
+        req.session.user.default_club
+        && user.default_club
+        && user.default_club !== req.session.user.default_club
+      ) {
+        req.flash('error', 'No puedes editar usuarios de otro club.');
+        return res.redirect('/admin/users');
+      }
     }
     const teams = await getPlayersByTeam(null);
     const uniqueTeams = Array.from(

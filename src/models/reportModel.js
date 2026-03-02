@@ -111,9 +111,9 @@ async function createReport(data) {
   return result.insertId;
 }
 
-async function getAllReports() {
-  const [rows] = await db.query(
-    `SELECT r.id,
+async function getAllReports(club = null) {
+  let sql = `
+    SELECT r.id,
             r.player_name,
             r.player_surname,
             r.year,
@@ -124,24 +124,50 @@ async function getAllReports() {
             u.name AS created_by_name
        FROM reports r
        LEFT JOIN users u ON r.created_by = u.id
-     ORDER BY r.created_at DESC`,
-  );
+  `;
+
+  const params = [];
+  if (club) {
+    sql += ' WHERE r.club = ?';
+    params.push(club);
+  }
+
+  sql += ' ORDER BY r.created_at DESC';
+
+  const [rows] = await db.query(sql, params);
   return rows;
 }
 
-async function getAllReportsRaw() {
-  const [rows] = await db.query('SELECT * FROM reports ORDER BY created_at DESC');
+async function getAllReportsRaw(club = null) {
+  let sql = 'SELECT * FROM reports';
+  const params = [];
+
+  if (club) {
+    sql += ' WHERE club = ?';
+    params.push(club);
+  }
+
+  sql += ' ORDER BY created_at DESC';
+
+  const [rows] = await db.query(sql, params);
   return rows;
 }
 
-async function getReportById(id) {
-  const [rows] = await db.query(
-    `SELECT r.*, u.name AS created_by_name, u.email AS created_by_email
-       FROM reports r
-       LEFT JOIN users u ON r.created_by = u.id
-      WHERE r.id = ?`,
-    [id],
-  );
+async function getReportById(id, club = null) {
+  let sql = `
+    SELECT r.*, u.name AS created_by_name, u.email AS created_by_email
+      FROM reports r
+      LEFT JOIN users u ON r.created_by = u.id
+     WHERE r.id = ?
+  `;
+  const params = [id];
+
+  if (club) {
+    sql += ' AND r.club = ?';
+    params.push(club);
+  }
+
+  const [rows] = await db.query(sql, params);
   return rows[0];
 }
 

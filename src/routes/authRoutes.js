@@ -6,6 +6,7 @@ const {
   findUserById,
   updateUserAccount,
 } = require('../models/userModel');
+const { getClubByCode } = require('../models/clubModel');
 const { getPlayersByTeam } = require('../models/playerModel');
 
 const router = express.Router();
@@ -65,7 +66,13 @@ router.get('/register', ensureGuest, (req, res) => {
 });
 
 router.post('/register', ensureGuest, async (req, res) => {
-  const { name, email, password, password2 } = req.body;
+  const {
+    name,
+    email,
+    password,
+    password2,
+    club_code,
+  } = req.body;
   if (!name || !email || !password) {
     req.flash('error', 'Todos los campos son obligatorios.');
     return res.redirect('/register');
@@ -91,7 +98,40 @@ router.post('/register', ensureGuest, async (req, res) => {
       req.flash('error', 'Ya existe un usuario con ese email.');
       return res.redirect('/register');
     }
-    await createUser({ name, email, password });
+
+    if (!club_code || !club_code.trim()) {
+      req.flash(
+        'error',
+        'Es obligatorio indicar un código de club válido para registrarse.',
+      );
+      return res.redirect('/register');
+    }
+
+    const club = await getClubByCode(club_code.trim());
+    if (!club) {
+      req.flash(
+        'error',
+        'El código de club no es válido. Contacta con tu responsable para que te facilite un código correcto.',
+      );
+      return res.redirect('/register');
+    }
+
+    await createUser({
+      name,
+      email,
+      password,
+    });
+
+    // Actualizar el default_club del usuario recién creado
+    const createdUser = await findUserByEmail(email);
+    if (createdUser) {
+      await updateUserAccount(createdUser.id, {
+        name: createdUser.name,
+        email: createdUser.email,
+        defaultClub: club.name,
+        defaultTeam: createdUser.default_team || null,
+      });
+    }
     req.flash('success', 'Usuario creado. Ahora puedes iniciar sesión.');
     return res.redirect('/login');
   } catch (err) {
@@ -112,7 +152,9 @@ router.post('/logout', ensureAuth, (req, res) => {
 router.get('/account', ensureAuth, async (req, res) => {
   try {
     const user = await findUserById(req.session.user.id);
-    const teams = await getPlayersByTeam(null);
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : user.default_club || null;
+    const teams = await getPlayersByTeam(null, clubFilter);
     const uniqueTeams = Array.from(
       new Set(teams.map((p) => p.team).filter((t) => t && t.trim())),
     ).sort();

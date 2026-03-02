@@ -45,13 +45,13 @@
     </a>
   </div>
 
-  <% if (currentUser && currentUser.role === 'admin') { %>
+  <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) { %>
   <!-- Gestión de jugadores (solo admin) -->
   <div class="col-sm-6 col-lg-3">
     <a href="/admin/players" class="text-decoration-none text-reset">
       <div class="card h-100 shadow-sm">
         <img
-          src="/img/list.svg"
+          src="/img/players.svg"
           class="card-img-top icon-dashboard p-3"
           alt="Gestión de jugadores"
         />
@@ -102,5 +102,26 @@
       </div>
     </a>
   </div>
+
+  <% if (currentUser && currentUser.role === 'superadmin') { %>
+  <!-- Gestión de clubes (solo superadmin) -->
+  <div class="col-sm-6 col-lg-3">
+    <a href="/admin/clubs" class="text-decoration-none text-reset">
+      <div class="card h-100 shadow-sm">
+        <img
+          src="/img/clubes.svg"
+          class="card-img-top icon-dashboard p-3"
+          alt="Gestión de clubes"
+        />
+        <div class="card-body">
+          <h5 class="card-title">Clubes</h5>
+          <p class="card-text">
+            Alta y gestión de clubes y códigos de registro.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <% } %>
   <% } %>
 </div>

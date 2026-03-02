@@ -84,10 +84,19 @@ async function updateUserAccount(
   return result.affectedRows;
 }
 
-async function getAllUsers() {
-  const [rows] = await db.query(
-    'SELECT id, name, email, role, default_club, default_team, created_at FROM users ORDER BY created_at DESC',
-  );
+async function getAllUsers(club = null) {
+  let sql =
+    'SELECT id, name, email, role, default_club, default_team, created_at FROM users';
+  const params = [];
+
+  if (club) {
+    sql += ' WHERE default_club = ?';
+    params.push(club);
+  }
+
+  sql += ' ORDER BY created_at DESC';
+
+  const [rows] = await db.query(sql, params);
   return rows;
 }
 
@@ -114,12 +123,12 @@ async function ensureAdminUser() {
   const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [adminEmail]);
   if (rows.length === 0) {
     // eslint-disable-next-line no-console
-    console.log(`Creando usuario admin por defecto (${adminEmail})`);
+    console.log(`Creando usuario superadmin por defecto (${adminEmail})`);
     await createUser({
       name: 'Administrador',
       email: adminEmail,
       password: adminPassword,
-      role: 'admin',
+      role: 'superadmin',
     });
   }
 }

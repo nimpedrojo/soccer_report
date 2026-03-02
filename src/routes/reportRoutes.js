@@ -23,7 +23,11 @@ function ensureAuth(req, res, next) {
 }
 
 function ensureAdmin(req, res, next) {
-  if (!req.session.user || req.session.user.role !== 'admin') {
+  if (
+    !req.session.user
+    || (req.session.user.role !== 'admin'
+      && req.session.user.role !== 'superadmin')
+  ) {
     req.flash('error', 'No tienes permisos para acceder a esta sección.');
     return res.redirect('/');
   }
@@ -37,9 +41,10 @@ router.get('/new', ensureAuth, async (req, res) => {
     (req.session.user && req.session.user.default_team) || 'Primera Infantil';
 
   // Intentamos filtrar jugadores por el equipo por defecto; si no hay, se podrán mostrar todos más adelante
-  let players = await getPlayersByTeam(defaultTeam);
+  const clubFilter = defaultClub || null;
+  let players = await getPlayersByTeam(defaultTeam, clubFilter);
   if (!players.length) {
-    players = await getPlayersByTeam(null);
+    players = await getPlayersByTeam(null, clubFilter);
   }
 
   res.render('reports/new', {
@@ -164,7 +169,8 @@ router.post('/new', ensureAuth, async (req, res) => {
     const overallRating = avg(overallValues);
 
     if (!player_name || !player_surname) {
-      const playersForForm = await getPlayersByTeam(team || null);
+      const clubFilter = (req.session.user && req.session.user.default_club) || null;
+      const playersForForm = await getPlayersByTeam(team || null, clubFilter);
       return res.status(400).render('reports/new', {
         formData: req.body,
         validationErrors: {
@@ -245,7 +251,8 @@ router.post('/new', ensureAuth, async (req, res) => {
       'error',
       `Ha ocurrido un error al guardar el informe: ${err.message}`,
     );
-    const playersForForm = await getPlayersByTeam(team || null);
+    const clubFilter = (req.session.user && req.session.user.default_club) || null;
+    const playersForForm = await getPlayersByTeam(team || null, clubFilter);
     return res.status(500).render('reports/new', {
       formData: req.body,
       validationErrors: {},
@@ -257,7 +264,9 @@ router.post('/new', ensureAuth, async (req, res) => {
 // Listado de informes (solo admin)
 router.get('/', ensureAdmin, async (req, res) => {
   try {
-    const reports = await getAllReports();
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const reports = await getAllReports(clubFilter);
     res.render('reports/list', { reports });
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -270,7 +279,9 @@ router.get('/', ensureAdmin, async (req, res) => {
 // Exportar informes a CSV (solo admin)
 router.get('/export/csv', ensureAdmin, async (req, res) => {
   try {
-    const reports = await getAllReportsRaw();
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const reports = await getAllReportsRaw(clubFilter);
     if (!reports.length) {
       req.flash('error', 'No hay informes para exportar.');
       return res.redirect('/reports');
@@ -299,7 +310,7 @@ router.get('/export/csv', ensureAdmin, async (req, res) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
       'Content-Disposition',
-      'attachment; filename="informes_stv.csv"',
+      'attachment; filename="soccer_report.csv"',
     );
     return res.send(csv);
   } catch (err) {
@@ -317,7 +328,9 @@ router.get('/export/csv', ensureAdmin, async (req, res) => {
 router.get('/:id/excel', ensureAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const report = await getReportById(id);
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const report = await getReportById(id, clubFilter);
     if (!report) {
       req.flash('error', 'Informe no encontrado.');
       return res.redirect('/reports');
@@ -384,7 +397,12 @@ router.get('/:id/excel', ensureAdmin, async (req, res) => {
 router.get('/api/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const report = await getReportById(id);
+    const isSuperAdmin = req.session.user
+      && req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin
+      ? null
+      : (req.session.user && req.session.user.default_club) || null;
+    const report = await getReportById(id, clubFilter);
     if (!report) {
       return res.status(404).json({ error: 'Informe no encontrado' });
     }
@@ -401,7 +419,9 @@ router.get('/api/:id', async (req, res) => {
 router.get('/:id', ensureAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const report = await getReportById(id);
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const report = await getReportById(id, clubFilter);
     if (!report) {
       req.flash('error', 'Informe no encontrado.');
       return res.redirect('/reports');
@@ -419,7 +439,9 @@ router.get('/:id', ensureAdmin, async (req, res) => {
 router.get('/:id/edit', ensureAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const report = await getReportById(id);
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const report = await getReportById(id, clubFilter);
     if (!report) {
       req.flash('error', 'Informe no encontrado.');
       return res.redirect('/reports');
