@@ -9,6 +9,12 @@ const {
   updateTeamName,
   deleteTeam,
 } = require('../models/clubTeamModel');
+const {
+  getRecommendationsByClub,
+  upsertRecommendation,
+  updateRecommendation,
+  deleteRecommendation,
+} = require('../models/clubRecommendationModel');
 
 const router = express.Router();
 
@@ -43,11 +49,12 @@ router.get('/', ensureAdmin, async (req, res) => {
   }
 
   try {
-    const [users, players, reports, teams] = await Promise.all([
+    const [users, players, reports, teams, recommendations] = await Promise.all([
       getAllUsers(club),
       getAllPlayers(club),
       getAllReports(club),
       getTeamsByClub(club),
+      getRecommendationsByClub(club),
     ]);
 
     return res.render('club/config', {
@@ -56,6 +63,8 @@ router.get('/', ensureAdmin, async (req, res) => {
       players,
       reports,
       teams,
+      recommendations,
+      recommendations: [],
     });
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -166,5 +175,123 @@ router.post('/teams/:id/delete', ensureAdmin, async (req, res) => {
   return res.redirect('/admin/club');
 });
 
-module.exports = router;
+router.post('/recommendations', ensureAdmin, async (req, res) => {
+  const club = getCurrentClubFromSession(req);
+  if (!club) {
+    req.flash(
+      'error',
+      'Debes configurar primero el club por defecto en tu cuenta.',
+    );
+    return res.redirect('/account');
+  }
 
+  const { year, options } = req.body;
+  const yearNum = Number(year);
+  if (!yearNum || Number.isNaN(yearNum)) {
+    req.flash('error', 'El año debe ser un número válido.');
+    return res.redirect('/admin/club');
+  }
+
+  const optionsText = (options || '').trim();
+  if (!optionsText) {
+    req.flash('error', 'Debes indicar al menos una opción de recomendación.');
+    return res.redirect('/admin/club');
+  }
+
+  try {
+    await upsertRecommendation({
+      club,
+      year: yearNum,
+      options: optionsText,
+    });
+    req.flash('success', 'Recomendaciones actualizadas correctamente para ese año.');
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Error al guardar recomendaciones de club:', err);
+    req.flash(
+      'error',
+      'Ha ocurrido un error al guardar las recomendaciones.',
+    );
+  }
+
+  return res.redirect('/admin/club');
+});
+
+router.post('/recommendations/:id/edit', ensureAdmin, async (req, res) => {
+  const club = getCurrentClubFromSession(req);
+  if (!club) {
+    req.flash(
+      'error',
+      'Debes configurar primero el club por defecto en tu cuenta.',
+    );
+    return res.redirect('/account');
+  }
+
+  const { id } = req.params;
+  const { year, options } = req.body;
+  const yearNum = Number(year);
+  if (!yearNum || Number.isNaN(yearNum)) {
+    req.flash('error', 'El año debe ser un número válido.');
+    return res.redirect('/admin/club');
+  }
+
+  const optionsText = (options || '').trim();
+  if (!optionsText) {
+    req.flash('error', 'Debes indicar al menos una opción de recomendación.');
+    return res.redirect('/admin/club');
+  }
+
+  try {
+    const affected = await updateRecommendation(id, club, {
+      year: yearNum,
+      options: optionsText,
+    });
+    if (!affected) {
+      req.flash('error', 'No se ha podido actualizar la fila de recomendaciones.');
+    } else {
+      req.flash('success', 'Recomendaciones actualizadas correctamente.');
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Error al actualizar recomendaciones de club:', err);
+    req.flash(
+      'error',
+      'Ha ocurrido un error al actualizar las recomendaciones.',
+    );
+  }
+
+  return res.redirect('/admin/club');
+});
+
+router.post('/recommendations/:id/delete', ensureAdmin, async (req, res) => {
+  const club = getCurrentClubFromSession(req);
+  if (!club) {
+    req.flash(
+      'error',
+      'Debes configurar primero el club por defecto en tu cuenta.',
+    );
+    return res.redirect('/account');
+  }
+
+  const { id } = req.params;
+
+  try {
+    const affected = await deleteRecommendation(id, club);
+    if (!affected) {
+      req.flash('error', 'No se ha podido borrar la fila de recomendaciones.');
+    } else {
+      req.flash('success', 'Fila de recomendaciones borrada correctamente.');
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Error al borrar recomendaciones de club:', err);
+    req.flash(
+      'error',
+      'Ha ocurrido un error al borrar las recomendaciones.',
+    );
+  }
+
+  return res.redirect('/admin/club');
+});
+
+module.exports = router;

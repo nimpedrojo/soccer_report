@@ -307,6 +307,30 @@ router.post('/:id/edit', ensureAdmin, async (req, res) => {
   }
 
   try {
+    let defaultClubValue = default_club && default_club.trim()
+      ? default_club.trim()
+      : null;
+    let defaultTeamValue = default_team && default_team.trim()
+      ? default_team.trim()
+      : null;
+
+    if (defaultClubValue) {
+      const clubTeams = await getTeamsByClub(defaultClubValue);
+      const allowedTeams = clubTeams.map((t) => t.name);
+      if (defaultTeamValue && !allowedTeams.includes(defaultTeamValue)) {
+        req.flash(
+          'error',
+          'El equipo por defecto debe ser uno de los equipos configurados para el club.',
+        );
+        return res.redirect(`/admin/users/${id}/edit`);
+      }
+      if (!defaultTeamValue) {
+        defaultTeamValue = null;
+      }
+    } else if (!defaultTeamValue) {
+      defaultTeamValue = '-';
+    }
+
     let passwordHash = null;
     if (new_password && new_password.trim()) {
       if (new_password.length < 8) {
@@ -323,8 +347,8 @@ router.post('/:id/edit', ensureAdmin, async (req, res) => {
     const affected = await updateUserAccount(id, {
       name,
       email,
-      defaultClub: default_club || null,
-      defaultTeam: default_team || null,
+      defaultClub: defaultClubValue,
+      defaultTeam: defaultTeamValue,
       passwordHash,
     });
     if (!affected) {

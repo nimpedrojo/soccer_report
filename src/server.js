@@ -4,6 +4,7 @@ const { createReportsTable } = require('./models/reportModel');
 const { createPlayersTable } = require('./models/playerModel');
 const { createClubsTable } = require('./models/clubModel');
 const { createClubTeamsTable } = require('./models/clubTeamModel');
+const { createClubRecommendationsTable } = require('./models/clubRecommendationModel');
 
 const PORT = process.env.PORT || 3000;
 
@@ -11,6 +12,7 @@ async function init() {
   await createUsersTable();
   await createClubsTable();
   await createClubTeamsTable();
+  await createClubRecommendationsTable();
   await createReportsTable();
   await createPlayersTable();
   await ensureAdminUser();

@@ -40,7 +40,7 @@
       class="form-control"
       id="default_club"
       name="default_club"
-      value="<%= user.default_club || 'Stadium Venecia' %>"
+      value="<%= user.default_club || '' %>"
     />
   </div>
 
@@ -51,17 +51,17 @@
       id="default_team"
       name="default_team"
     >
-      <% const currentTeam = user.default_team || 'Primera Infantil'; %>
+      <% const hasTeams = Array.isArray(teams) && teams.length > 0; %>
+      <% const currentTeam = user.default_team && user.default_team !== '-' ? user.default_team : ''; %>
       <option value="">-- Selecciona equipo --</option>
-      <% if (typeof teams !== 'undefined' && teams && teams.length) { %>
+      <% if (hasTeams) { %>
         <% teams.forEach(function (t) { %>
           <option value="<%= t %>" <%= t === currentTeam ? 'selected' : '' %>>
             <%= t %>
           </option>
         <% }) %>
-      <% } %>
-      <% if (!teams || !teams.includes(currentTeam)) { %>
-        <option value="<%= currentTeam %>" selected><%= currentTeam %></option>
+      <% } else { %>
+        <option value="-" selected>-</option>
       <% } %>
     </select>
   </div>

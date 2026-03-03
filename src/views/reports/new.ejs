@@ -794,21 +794,8 @@
         'pers_total',
       );
 
-      // Recomendación según año de nacimiento
-      const recommendationByYear = {
-        2008: ['JUVENIL A', 'JUVENIL B'],
-        2009: ['JUVENIL A', 'JUVENIL B'],
-        2010: ['JUVENIL A', 'JUVENIL B'],
-        2011: ['CADETE A', 'CADETE B', 'CADETE C'],
-        2012: ['CADETE A', 'CADETE B', 'CADETE C'],
-        2013: ['INFANTIL A', 'INFANTIL B', 'INFANTIL C'],
-        2014: ['INFANTIL A', 'INFANTIL B', 'INFANTIL C'],
-        2015: ['ALEVIN A', 'ALEVIN B', 'ALEVIN C'],
-        2016: ['ALEVIN A', 'ALEVIN B', 'ALEVIN C'],
-        2017: ['BENJAMIN A', 'BENJAMIN B', 'BENJAMIN C'],
-        2018: ['BENJAMIN A', 'BENJAMIN B', 'BENJAMIN C'],
-        2019: ['PREBENJAMIN'],
-      };
+      // Recomendación según año de nacimiento (configurable por club)
+      const recommendationByYear = <%- JSON.stringify(recommendationConfig || {}) %>;
 
       function updateRecommendationOptions() {
         const yearInput = document.querySelector('input[name="year"]');

@@ -6,6 +6,7 @@ const {
   updateClub,
   deleteClub,
 } = require('../models/clubModel');
+const { getAllUsers, deleteUser } = require('../models/userModel');
 
 const router = express.Router();
 
@@ -105,6 +106,20 @@ router.post('/:id/edit', ensureSuperAdmin, async (req, res) => {
 router.post('/:id/delete', ensureSuperAdmin, async (req, res) => {
   const { id } = req.params;
   try {
+    const club = await getClubById(id);
+    if (!club) {
+      req.flash('error', 'El club indicado no existe.');
+      return res.redirect('/admin/clubs');
+    }
+
+    // Borrar usuarios asociados al club antes de eliminarlo
+    const users = await getAllUsers(club.name);
+    // eslint-disable-next-line no-restricted-syntax
+    for (const user of users) {
+      // eslint-disable-next-line no-await-in-loop
+      await deleteUser(user.id);
+    }
+
     const affected = await deleteClub(id);
     if (!affected) {
       req.flash('error', 'No se ha podido borrar el club.');

@@ -187,11 +187,36 @@ router.post('/account', ensureAuth, async (req, res) => {
   }
 
   try {
+    let defaultClubValue = default_club && default_club.trim()
+      ? default_club.trim()
+      : null;
+    let defaultTeamValue = default_team && default_team.trim()
+      ? default_team.trim()
+      : null;
+
+    if (defaultClubValue) {
+      const clubTeams = await getTeamsByClub(defaultClubValue);
+      const allowedTeams = clubTeams.map((t) => t.name);
+      if (defaultTeamValue && !allowedTeams.includes(defaultTeamValue)) {
+        req.flash(
+          'error',
+          'El equipo por defecto debe ser uno de los equipos configurados para el club.',
+        );
+        return res.redirect('/account');
+      }
+      if (!defaultTeamValue) {
+        defaultTeamValue = null;
+      }
+    } else if (!defaultTeamValue) {
+      // Sin club todavía: usar marcador "-" hasta que se escoja
+      defaultTeamValue = '-';
+    }
+
     const affected = await updateUserAccount(req.session.user.id, {
       name,
       email,
-      defaultClub: default_club || null,
-      defaultTeam: default_team || null,
+      defaultClub: defaultClubValue,
+      defaultTeam: defaultTeamValue,
     });
     if (!affected) {
       req.flash('error', 'No se ha podido actualizar tu cuenta.');
@@ -201,8 +226,8 @@ router.post('/account', ensureAuth, async (req, res) => {
     // Actualizar los datos en sesión
     req.session.user.name = name;
     req.session.user.email = email;
-    req.session.user.default_club = default_club || null;
-    req.session.user.default_team = default_team || null;
+    req.session.user.default_club = defaultClubValue;
+    req.session.user.default_team = defaultTeamValue;
 
     req.flash('success', 'Tu cuenta se ha actualizado correctamente.');
     return res.redirect('/account');

@@ -10,6 +10,7 @@ const {
   updateReport,
   deleteReport,
 } = require('../models/reportModel');
+const { getRecommendationsByClub } = require('../models/clubRecommendationModel');
 const { getPlayersByTeam } = require('../models/playerModel');
 
 const router = express.Router();
@@ -47,6 +48,27 @@ router.get('/new', ensureAuth, async (req, res) => {
     players = await getPlayersByTeam(null, clubFilter);
   }
 
+  let recommendationConfig = {};
+  try {
+    let rows = await getRecommendationsByClub(defaultClub);
+    if (!rows || !rows.length) {
+      rows = await getRecommendationsByClub('DEFAULT');
+    }
+    recommendationConfig = rows.reduce((acc, r) => {
+      const opts = (r.options || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s);
+      if (opts.length) {
+        acc[r.year] = opts;
+      }
+      return acc;
+    }, {});
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('Error obteniendo recomendaciones de club:', e);
+  }
+
   res.render('reports/new', {
     formData: {
       club: defaultClub,
@@ -54,6 +76,7 @@ router.get('/new', ensureAuth, async (req, res) => {
     },
     validationErrors: {},
     players,
+    recommendationConfig,
   });
 });
 
@@ -171,6 +194,28 @@ router.post('/new', ensureAuth, async (req, res) => {
     if (!player_name || !player_surname) {
       const clubFilter = (req.session.user && req.session.user.default_club) || null;
       const playersForForm = await getPlayersByTeam(team || null, clubFilter);
+      let recommendationConfig = {};
+      try {
+        const clubForRec =
+          (req.session.user && req.session.user.default_club) || clubFilter || 'DEFAULT';
+        let rows = await getRecommendationsByClub(clubForRec);
+        if (!rows || !rows.length) {
+          rows = await getRecommendationsByClub('DEFAULT');
+        }
+        recommendationConfig = rows.reduce((acc, r) => {
+          const opts = (r.options || '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s);
+          if (opts.length) {
+            acc[r.year] = opts;
+          }
+          return acc;
+        }, {});
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('Error obteniendo recomendaciones de club:', e);
+      }
       return res.status(400).render('reports/new', {
         formData: req.body,
         validationErrors: {
@@ -178,6 +223,7 @@ router.post('/new', ensureAuth, async (req, res) => {
           player_surname: !player_surname,
         },
         players: playersForForm,
+        recommendationConfig,
       });
     }
 
