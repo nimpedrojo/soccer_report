@@ -50,11 +50,11 @@
   <div class="col-md-6">
     <h5>Valoración técnica</h5>
     <ul class="list-unstyled">
-      <li><strong>Cobertura de balón:</strong> <%= report.tech_cobertura_balon || '-' %></li>
-      <li><strong>Conducción:</strong> <%= report.tech_conduccion || '-' %></li>
-      <li><strong>Control:</strong> <%= report.tech_control || '-' %></li>
-      <li><strong>Regate:</strong> <%= report.tech_regate || '-' %></li>
-      <li><strong>Disparo:</strong> <%= report.tech_disparo || '-' %></li>
+      <li><strong>Cobertura de balón/Saque de mano:</strong> <%= report.tech_cobertura_balon || '-' %></li>
+      <li><strong>Conducción/Saque de volea:</strong> <%= report.tech_conduccion || '-' %></li>
+      <li><strong>Control/Juego con los pies:</strong> <%= report.tech_control || '-' %></li>
+      <li><strong>Regate/Blocajes:</strong> <%= report.tech_regate || '-' %></li>
+      <li><strong>Disparo/Despejes:</strong> <%= report.tech_disparo || '-' %></li>
       <li><strong>Pase:</strong> <%= report.tech_pase || '-' %></li>
       <li><strong>Remate de cabeza:</strong> <%= report.tech_remate_cabeza || '-' %></li>
       <li><strong>Anticipación:</strong> <%= report.tech_anticipacion || '-' %></li>
@@ -64,11 +64,11 @@
     <h5>Valoración física</h5>
     <ul class="list-unstyled">
       <li><strong>Capacidad de sacrificio:</strong> <%= report.phys_sacrificio || '-' %></li>
-      <li><strong>Velocidad punta:</strong> <%= report.phys_velocidad_punta || '-' %></li>
+      <li><strong>Velocidad punta/Reflejos:</strong> <%= report.phys_velocidad_punta || '-' %></li>
       <li><strong>Velocidad reacción:</strong> <%= report.phys_velocidad_reaccion || '-' %></li>
       <li><strong>Fuerza:</strong> <%= report.phys_fuerza || '-' %></li>
       <li><strong>Potencia:</strong> <%= report.phys_potencia || '-' %></li>
-      <li><strong>Resistencia:</strong> <%= report.phys_resistencia || '-' %></li>
+      <li><strong>Resistencia/Salto:</strong> <%= report.phys_resistencia || '-' %></li>
       <li><strong>Coordinación:</strong> <%= report.phys_coordinacion || '-' %></li>
       <li><strong>Total físico:</strong> <%= report.phys_total || '-' %></li>
     </ul>
@@ -77,12 +77,12 @@
     <h5>Valoración táctica</h5>
     <ul class="list-unstyled">
       <li>
-        <strong>Transición ataque-defensa:</strong>
+        <strong>Transición ataque-defensa/Pos.general:</strong>
         <%= report.tact_transicion_ataque_defensa || '-' %>
       </li>
       <li><strong>Movimientos sin balón:</strong> <%= report.tact_movimientos_sin_balon || '-' %></li>
-      <li><strong>Ayudas defensivas:</strong> <%= report.tact_ayudas_defensivas || '-' %></li>
-      <li><strong>Ayudas ofensivas:</strong> <%= report.tact_ayudas_ofensivas || '-' %></li>
+      <li><strong>Ayudas defensivas/Polivalencia:</strong> <%= report.tact_ayudas_defensivas || '-' %></li>
+      <li><strong>Ayudas ofensivas/Vision de juego:</strong> <%= report.tact_ayudas_ofensivas || '-' %></li>
       <li><strong>Desmarques:</strong> <%= report.tact_desmarques || '-' %></li>
       <li><strong>Marcajes:</strong> <%= report.tact_marcajes || '-' %></li>
       <li><strong>Total táctico:</strong> <%= report.tact_total || '-' %></li>
