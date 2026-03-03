@@ -1,6 +1,6 @@
 # AGENTS.md — Informes STV
 
-Este proyecto es una aplicación Node.js/Express con EJS para gestionar informes de scouting de jugadores del club Stadium Venecia. Las siguientes normas están pensadas para cualquier agente que modifique este repositorio.
+Este proyecto es una aplicación Node.js/Express con EJS para gestionar informes de scouting de jugadores. Las siguientes normas están pensadas para cualquier agente que modifique este repositorio.
 
 ## Arquitectura y stack
 
@@ -22,11 +22,6 @@ Este proyecto es una aplicación Node.js/Express con EJS para gestionar informes
 - No cambies la forma básica de inicializar la app:
   - Tablas se crean en `init()` dentro de `src/server.js`.
   - `app.js` no debe hacer trabajo de inicialización de BD ni escuchar el puerto.
-- Mantén la paleta y branding actuales:
-  - Color base: rojo (`--sv-red`, `--sv-red-dark`).
-  - Logos:
-    - Navbar: `/img/logo-stadium.png`.
-    - Login: `/img/logo-stadium-login.png` (dentro de `.login-card`).
 
 ## Estilo de código
 
@@ -61,6 +56,9 @@ Este proyecto es una aplicación Node.js/Express con EJS para gestionar informes
   - `users`: incluye `role`, `default_club`, `default_team`.
   - `reports`: todos los campos de informe más `created_by` y `created_at`.
   - `players`: base de jugadores importada desde Excel.
+  - `clubs`: catálogo de clubes con nombre y código de registro.
+  - `club_teams`: equipos asociados a cada club (para selección de equipos por defecto y filtros).
+  - `club_recommendations`: mapeo configurable año → opciones de recomendación por club (y valores por defecto para el club genérico `DEFAULT`).
 - Migraciones “suaves”:
   - Cuando añadas columnas nuevas, sigue el patrón actual:
     - `CREATE TABLE IF NOT EXISTS`.
@@ -68,6 +66,7 @@ Este proyecto es una aplicación Node.js/Express con EJS para gestionar informes
 - Relaciones:
   - `reports.created_by` referencia `users.id`, pero se permite `NULL`.
   - Antes de borrar usuarios, desvincula sus informes (`created_by = NULL`).
+  - Al borrar un club se borran también los usuarios asociados a ese club (sus informes quedan desvinculados).
 
 ## Funcionalidad clave existente (no romper)
 
@@ -98,16 +97,6 @@ Este proyecto es una aplicación Node.js/Express con EJS para gestionar informes
   y asegúrate de que la suite pasa.
 - Una vez que la suite pase elimina los registros de prueba de la BBDD   
 
-## Scripts útiles
-
-- Importar jugadores desde Excel:
-
-  ```bash
-  npm run import:players
-  ```
-
-  - Usa por defecto `PLAYERS_EXCEL_PATH=/Users/.../Deportistas_2025.xlsx`.
-  - Si cambias rutas, documenta el cambio en el README.
 
 ## Qué evitar
 
@@ -117,4 +106,3 @@ Este proyecto es una aplicación Node.js/Express con EJS para gestionar informes
 - No introducir dependencias de pago.
 
 Si necesitas nuevas capacidades (p.ej. filtros avanzados, nuevos formatos de exportación), sigue la estructura actual: modelos para datos, rutas para lógica HTTP, vistas para renderizado y tests que cubran los flujos principales.
-

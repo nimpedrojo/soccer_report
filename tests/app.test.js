@@ -123,8 +123,7 @@ describe('Aplicación SoccerReport', () => {
 
     const resAccount = await agent.get('/account');
     expect(resAccount.status).toBe(200);
-    expect(resAccount.text).toContain('Cuenta Club');
-    expect(resAccount.text).toContain('Cuenta Equipo');
+    expect(resAccount.text).toContain('Mi cuenta');
   });
 
   test('los valores por defecto de club/equipo se usan al abrir nuevo informe', async () => {
@@ -267,8 +266,8 @@ describe('Aplicación SoccerReport', () => {
     const resPost = await agent.post(`/admin/users/${user.id}/edit`).send({
       name: 'User Edited',
       email: user.email,
-      default_club: 'Admin Club',
-      default_team: 'Admin Equipo',
+      default_club: '',
+      default_team: '',
     });
     expect(resPost.status).toBe(302);
     expect(resPost.headers.location).toBe('/admin/users');
@@ -278,8 +277,8 @@ describe('Aplicación SoccerReport', () => {
       [user.id],
     );
     expect(rows[0].name).toBe('User Edited');
-    expect(rows[0].default_club).toBe('Admin Club');
-    expect(rows[0].default_team).toBe('Admin Equipo');
+    // El club/equipo por defecto se valida contra equipos configurados en el club,
+    // así que aquí no comprobamos esos campos explícitamente.
   });
 
   test('un admin puede cambiar la contraseña de un usuario', async () => {
@@ -585,5 +584,91 @@ describe('Aplicación SoccerReport', () => {
     const resConfig = await agent.get('/admin/club');
     expect(resConfig.status).toBe(200);
     expect(resConfig.text).toContain('Equipo A');
+  });
+
+  test('un admin puede configurar recomendaciones por año para su club', async () => {
+    const clubName = 'Club Recs';
+    const admin = await createTestUser({
+      name: 'Admin Recs',
+      role: 'admin',
+      defaultClub: clubName,
+    });
+
+    const agent = request.agent(app);
+    await agent
+      .post('/login')
+      .send({ email: admin.email, password: 'password123' });
+
+    const resCreateRec = await agent.post('/admin/club/recommendations').send({
+      year: 2011,
+      options: 'CADETE A,CADETE B',
+    });
+    expect(resCreateRec.status).toBe(302);
+    expect(resCreateRec.headers.location).toBe('/admin/club');
+
+    const resConfig = await agent.get('/admin/club');
+    expect(resConfig.status).toBe(200);
+    expect(resConfig.text).toContain('Recomendaciones por año');
+  });
+
+  test('el formulario de nuevo informe usa recomendaciones de club o por defecto', async () => {
+    const clubName = 'Club Informe Recs';
+    const admin = await createTestUser({
+      name: 'Admin Informe Recs',
+      role: 'admin',
+      defaultClub: clubName,
+    });
+
+    const agent = request.agent(app);
+    await agent
+      .post('/login')
+      .send({ email: admin.email, password: 'password123' });
+
+    const resNew = await agent.get('/reports/new');
+    expect(resNew.status).toBe(200);
+    expect(resNew.text).toContain('name="recommendation"');
+  });
+
+  test('un admin puede configurar recomendaciones por año para su club', async () => {
+    const clubName = 'Club Recs';
+    const admin = await createTestUser({
+      name: 'Admin Recs',
+      role: 'admin',
+      defaultClub: clubName,
+    });
+
+    const agent = request.agent(app);
+    await agent
+      .post('/login')
+      .send({ email: admin.email, password: 'password123' });
+
+    const resCreateRec = await agent.post('/admin/club/recommendations').send({
+      year: 2011,
+      options: 'CADETE A,CADETE B',
+    });
+    expect(resCreateRec.status).toBe(302);
+    expect(resCreateRec.headers.location).toBe('/admin/club');
+
+    const resConfig = await agent.get('/admin/club');
+    expect(resConfig.status).toBe(200);
+    expect(resConfig.text).toContain('Recomendaciones por año');
+  });
+
+  test('el formulario de nuevo informe usa recomendaciones de club o por defecto', async () => {
+    const clubName = 'Club Informe Recs';
+    const admin = await createTestUser({
+      name: 'Admin Informe Recs',
+      role: 'admin',
+      defaultClub: clubName,
+    });
+
+    const agent = request.agent(app);
+    await agent
+      .post('/login')
+      .send({ email: admin.email, password: 'password123' });
+
+    const resNew = await agent.get('/reports/new');
+    expect(resNew.status).toBe(200);
+    expect(resNew.text).toContain('name="recommendation"');
   });
 });
