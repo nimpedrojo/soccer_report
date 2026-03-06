@@ -161,6 +161,65 @@ describe('Aplicación SoccerReport', () => {
     };
   }
 
+  async function seedEvaluationScoresForEvaluation(evaluationId, values = {}) {
+    const defaults = {
+      tecnica_control: 7,
+      tecnica_pase: 8,
+      tecnica_golpeo: 6,
+      tecnica_conduccion: 7,
+      tactica_posicionamiento: 8,
+      tactica_comprension_juego: 7,
+      tactica_toma_decisiones: 6,
+      tactica_desmarques: 7,
+      fisica_velocidad: 8,
+      fisica_resistencia: 7,
+      fisica_coordinacion: 8,
+      fisica_fuerza: 6,
+      psicologica_concentracion: 8,
+      psicologica_competitividad: 8,
+      psicologica_confianza: 7,
+      psicologica_reaccion_error: 7,
+      personalidad_compromiso: 9,
+      personalidad_companerismo: 8,
+      personalidad_escucha: 8,
+      personalidad_disciplina: 9,
+      ...values,
+    };
+
+    const metricMap = [
+      ['tecnica', 'control', 'Control', defaults.tecnica_control, 1],
+      ['tecnica', 'pase', 'Pase', defaults.tecnica_pase, 2],
+      ['tecnica', 'golpeo', 'Golpeo', defaults.tecnica_golpeo, 3],
+      ['tecnica', 'conduccion', 'Conduccion', defaults.tecnica_conduccion, 4],
+      ['tactica', 'posicionamiento', 'Posicionamiento', defaults.tactica_posicionamiento, 1],
+      ['tactica', 'comprension_juego', 'Comprension juego', defaults.tactica_comprension_juego, 2],
+      ['tactica', 'toma_decisiones', 'Toma decisiones', defaults.tactica_toma_decisiones, 3],
+      ['tactica', 'desmarques', 'Desmarques', defaults.tactica_desmarques, 4],
+      ['fisica', 'velocidad', 'Velocidad', defaults.fisica_velocidad, 1],
+      ['fisica', 'resistencia', 'Resistencia', defaults.fisica_resistencia, 2],
+      ['fisica', 'coordinacion', 'Coordinacion', defaults.fisica_coordinacion, 3],
+      ['fisica', 'fuerza', 'Fuerza', defaults.fisica_fuerza, 4],
+      ['psicologica', 'concentracion', 'Concentracion', defaults.psicologica_concentracion, 1],
+      ['psicologica', 'competitividad', 'Competitividad', defaults.psicologica_competitividad, 2],
+      ['psicologica', 'confianza', 'Confianza', defaults.psicologica_confianza, 3],
+      ['psicologica', 'reaccion_error', 'Reaccion error', defaults.psicologica_reaccion_error, 4],
+      ['personalidad', 'compromiso', 'Compromiso', defaults.personalidad_compromiso, 1],
+      ['personalidad', 'companerismo', 'Companerismo', defaults.personalidad_companerismo, 2],
+      ['personalidad', 'escucha', 'Escucha', defaults.personalidad_escucha, 3],
+      ['personalidad', 'disciplina', 'Disciplina', defaults.personalidad_disciplina, 4],
+    ];
+
+    for (const [area, key, label, score, order] of metricMap) {
+      // eslint-disable-next-line no-await-in-loop
+      await db.query(
+        `INSERT INTO evaluation_scores (
+          id, evaluation_id, area, metric_key, metric_label, score, sort_order
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [randomUUID(), evaluationId, area, key, label, score, order],
+      );
+    }
+  }
+
   test('redirección inicial a /login si no hay sesión', async () => {
     const res = await request(app).get('/');
     expect(res.status).toBe(302);
@@ -1198,5 +1257,207 @@ describe('Aplicación SoccerReport', () => {
       [context.club.id],
     );
     expect(afterCount.total).toBe(beforeRows[0][0].total);
+  });
+
+  test('player profile renders', async () => {
+    const context = await createEvaluationContext('Club Perfil');
+    await db.query(
+      `INSERT INTO reports (
+        player_name, player_surname, club, team, overall_rating, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+      ['Mario', 'Sanz', context.club.name, 'Juvenil Eval', 7.8, context.admin.id],
+    );
+
+    const agent = request.agent(app);
+    await agent.post('/login').send({
+      email: context.admin.email,
+      password: 'password123',
+    });
+
+    const res = await agent.get(`/players/${context.playerId}`);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Mario Sanz');
+    expect(res.text).toContain('Informacion personal');
+    expect(res.text).toContain('Contexto futbolistico');
+    expect(res.text).toContain('Informes');
+  });
+
+  test('player profile with evaluations renders analytics and chart', async () => {
+    const context = await createEvaluationContext('Club Perfil Eval');
+    const evaluationId = randomUUID();
+    await db.query(
+      `INSERT INTO evaluations (
+        id, club_id, season_id, team_id, player_id, author_id, evaluation_date,
+        source, title, notes, overall_score
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        evaluationId,
+        context.club.id,
+        context.season.id,
+        context.teamId,
+        context.playerId,
+        context.admin.id,
+        '2026-03-06',
+        'manual',
+        'Perfil analitico',
+        'Notas',
+        7.6,
+      ],
+    );
+    await seedEvaluationScoresForEvaluation(evaluationId);
+
+    const agent = request.agent(app);
+    await agent.post('/login').send({
+      email: context.admin.email,
+      password: 'password123',
+    });
+
+    const res = await agent.get(`/players/${context.playerId}`);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Media global');
+    expect(res.text).toContain('Total evaluaciones');
+    expect(res.text).toContain('playerRadarChart');
+    expect(res.text).toContain('Tecnica');
+  });
+
+  test('player profile empty state without evaluations', async () => {
+    const context = await createEvaluationContext('Club Perfil Empty');
+    const agent = request.agent(app);
+    await agent.post('/login').send({
+      email: context.admin.email,
+      password: 'password123',
+    });
+
+    const res = await agent.get(`/players/${context.playerId}`);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('No hay evaluaciones registradas para este jugador');
+    expect(res.text).not.toContain('playerRadarChart');
+  });
+
+  test('dashboard renders analytics layer', async () => {
+    const context = await createEvaluationContext('Club Dashboard Render');
+    const agent = request.agent(app);
+    await agent.post('/login').send({
+      email: context.admin.email,
+      password: 'password123',
+    });
+
+    const res = await agent.get('/dashboard');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Jugadores registrados');
+    expect(res.text).toContain('Jugadores sin evaluación por equipo');
+    expect(res.text).toContain('Juvenil Eval');
+  });
+
+  test('dashboard counters with fixtures', async () => {
+    const context = await createEvaluationContext('Club Dashboard Counters');
+    await db.query(
+      `INSERT INTO reports (
+        player_name, player_surname, club, team, overall_rating, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ['Mario', 'Sanz', context.club.name, 'Juvenil Eval', 8.1, context.admin.id, '2026-09-10 10:00:00'],
+    );
+    const evaluationId = randomUUID();
+    await db.query(
+      `INSERT INTO evaluations (
+        id, club_id, season_id, team_id, player_id, author_id, evaluation_date,
+        source, title, notes, overall_score
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        evaluationId,
+        context.club.id,
+        context.season.id,
+        context.teamId,
+        context.playerId,
+        context.admin.id,
+        '2026-10-01',
+        'manual',
+        'Counter Eval',
+        'Notas',
+        8.0,
+      ],
+    );
+    await seedEvaluationScoresForEvaluation(evaluationId);
+
+    const agent = request.agent(app);
+    await agent.post('/login').send({
+      email: context.admin.email,
+      password: 'password123',
+    });
+
+    const res = await agent.get('/dashboard');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('1.00');
+    expect(res.text).toContain('Informes emitidos');
+    expect(res.text).toContain('Equipos activos');
+  });
+
+  test('pending evaluations table renders correctly', async () => {
+    const context = await createTeamContext('Club Dashboard Pending');
+    const teamA = randomUUID();
+    const teamB = randomUUID();
+    await db.query(
+      `INSERT INTO teams (id, club_id, season_id, section_id, category_id, name)
+       VALUES (?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)`,
+      [
+        teamA, context.club.id, context.season.id, context.masculina.id, context.juvenil.id, 'Juvenil A',
+        teamB, context.club.id, context.season.id, context.masculina.id, context.cadete.id, 'Cadete A',
+      ],
+    );
+    const [p1] = await db.query(
+      'INSERT INTO players (first_name, last_name, club, club_id, current_team_id, team) VALUES (?, ?, ?, ?, ?, ?)',
+      ['Pedro', 'Uno', context.club.name, context.club.id, teamA, 'Juvenil A'],
+    );
+    const [p2] = await db.query(
+      'INSERT INTO players (first_name, last_name, club, club_id, current_team_id, team) VALUES (?, ?, ?, ?, ?, ?)',
+      ['Pedro', 'Dos', context.club.name, context.club.id, teamA, 'Juvenil A'],
+    );
+    const [p3] = await db.query(
+      'INSERT INTO players (first_name, last_name, club, club_id, current_team_id, team) VALUES (?, ?, ?, ?, ?, ?)',
+      ['Pedro', 'Tres', context.club.name, context.club.id, teamB, 'Cadete A'],
+    );
+    await db.query(
+      `INSERT INTO team_players (id, team_id, player_id, dorsal, positions)
+       VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`,
+      [
+        randomUUID(), teamA, p1.insertId, '6', 'MC',
+        randomUUID(), teamA, p2.insertId, '8', 'MC',
+        randomUUID(), teamB, p3.insertId, '9', 'DEL',
+      ],
+    );
+    const evaluationId = randomUUID();
+    await db.query(
+      `INSERT INTO evaluations (
+        id, club_id, season_id, team_id, player_id, author_id, evaluation_date,
+        source, title, notes, overall_score
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        evaluationId,
+        context.club.id,
+        context.season.id,
+        teamA,
+        p1.insertId,
+        context.admin.id,
+        '2026-10-10',
+        'manual',
+        'Pending test',
+        'Notas',
+        7.5,
+      ],
+    );
+    await seedEvaluationScoresForEvaluation(evaluationId);
+
+    const agent = request.agent(app);
+    await agent.post('/login').send({
+      email: context.admin.email,
+      password: 'password123',
+    });
+
+    const res = await agent.get('/dashboard');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Juvenil A');
+    expect(res.text).toContain('Cadete A');
+    expect(res.text).toContain('Pendientes');
+    expect(res.text).toContain('50%');
   });
 });

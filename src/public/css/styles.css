@@ -356,6 +356,38 @@ body {
   border-radius: 1rem;
 }
 
+.player-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0b3b8c, #1d6bd1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.profile-info-grid,
+.analytics-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.profile-info-grid div,
+.analytics-stat-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chart-panel {
+  position: relative;
+  min-height: 320px;
+}
+
 @media (max-width: 991.98px) {
   .app-frame {
     flex-direction: column;
@@ -370,5 +402,10 @@ body {
   .app-topbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .profile-info-grid,
+  .analytics-stat-grid {
+    grid-template-columns: 1fr;
   }
 }

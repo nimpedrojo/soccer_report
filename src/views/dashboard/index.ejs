@@ -1,0 +1,164 @@
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+  <div>
+    <p class="text-muted mb-0">
+      <% if (activeSeason) { %>
+        Temporada activa <strong><%= activeSeason.name %></strong>
+      <% } else { %>
+        Sin temporada activa configurada
+      <% } %>
+    </p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/reports/new" class="btn btn-primary">Nuevo informe</a>
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) { %>
+      <a href="/evaluations/new" class="btn btn-outline-secondary">Nueva evaluación</a>
+    <% } %>
+    <a href="/account" class="btn btn-outline-secondary">Mi cuenta</a>
+  </div>
+</div>
+
+<% if (!dashboard) { %>
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <p class="mb-0">Configura un club por defecto para ver el panel analítico.</p>
+    </div>
+  </div>
+<% } else { %>
+  <div class="row g-4 mb-4">
+    <div class="col-md-6 col-xl-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase mb-2">Jugadores registrados</div>
+          <div class="display-6 fw-semibold"><%= dashboard.metrics.totalActivePlayers %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase mb-2">Equipos activos</div>
+          <div class="display-6 fw-semibold"><%= dashboard.metrics.activeTeams %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase mb-2">Informes emitidos</div>
+          <div class="display-6 fw-semibold"><%= dashboard.metrics.reportsInActiveSeason %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase mb-2">Media jugadores / equipo</div>
+          <div class="display-6 fw-semibold"><%= dashboard.metrics.averagePlayersPerTeam.toFixed(2) %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h2 class="h5 mb-0">Jugadores sin evaluación por equipo</h2>
+            <a href="/evaluations/compare" class="btn btn-sm btn-outline-secondary">Comparativa 26/27</a>
+          </div>
+
+          <% if (!dashboard.pendingByTeam.length) { %>
+            <p class="mb-0 text-muted">No hay equipos activos con jugadores asignados.</p>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Equipo</th>
+                    <th>Categoria</th>
+                    <th>Seccion</th>
+                    <th>Total jugadores</th>
+                    <th>Evaluados</th>
+                    <th>Pendientes</th>
+                    <th>Avance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% dashboard.pendingByTeam.forEach((team) => { %>
+                    <tr>
+                      <td class="fw-semibold"><%= team.teamName %></td>
+                      <td><%= team.categoryName %></td>
+                      <td><%= team.sectionName %></td>
+                      <td><%= team.totalPlayers %></td>
+                      <td><%= team.evaluatedPlayers %></td>
+                      <td><%= team.pendingPlayers %></td>
+                      <td style="min-width: 220px;">
+                        <div class="d-flex align-items-center gap-3">
+                          <div class="progress flex-grow-1" role="progressbar" aria-valuenow="<%= team.completionPercentage %>" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: <%= team.completionPercentage %>%"></div>
+                          </div>
+                          <span class="small fw-semibold"><%= team.completionPercentage.toFixed(0) %>%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<% } %>
+
+<div class="row g-4">
+  <div class="col-md-6 col-xl-3">
+    <a href="/reports" class="text-decoration-none text-reset">
+      <div class="card h-100 shadow-sm">
+        <img src="/img/list.svg" class="card-img-top icon-dashboard p-3" alt="Listado de informes" />
+        <div class="card-body">
+          <h5 class="card-title">Listado de informes</h5>
+          <p class="card-text">Ver todos los informes registrados.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <a href="/evaluations" class="text-decoration-none text-reset">
+      <div class="card h-100 shadow-sm">
+        <img src="/img/report.svg" class="card-img-top icon-dashboard p-3" alt="Evaluaciones" />
+        <div class="card-body">
+          <h5 class="card-title">Evaluaciones</h5>
+          <p class="card-text">Seguimiento técnico y analítico por equipo.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) { %>
+    <div class="col-md-6 col-xl-3">
+      <a href="/admin/players" class="text-decoration-none text-reset">
+        <div class="card h-100 shadow-sm">
+          <img src="/img/players.svg" class="card-img-top icon-dashboard p-3" alt="Jugadores" />
+          <div class="card-body">
+            <h5 class="card-title">Jugadores</h5>
+            <p class="card-text">Ver, editar y seguir perfiles de jugadores.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <a href="/admin/users" class="text-decoration-none text-reset">
+        <div class="card h-100 shadow-sm">
+          <img src="/img/users.svg" class="card-img-top icon-dashboard p-3" alt="Gestión de usuarios" />
+          <div class="card-body">
+            <h5 class="card-title">Gestión de usuarios</h5>
+            <p class="card-text">Administrar accesos y roles del club.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  <% } %>
+</div>

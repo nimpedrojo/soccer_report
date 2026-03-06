@@ -184,6 +184,26 @@ async function deleteReport(id) {
   return result.affectedRows;
 }
 
+async function getReportsForPlayerProfile({ clubName, firstName, lastName }) {
+  const [rows] = await db.query(
+    `SELECT
+        r.id,
+        r.player_name,
+        r.player_surname,
+        r.club,
+        r.team,
+        r.overall_rating,
+        r.created_at,
+        u.name AS created_by_name
+      FROM reports r
+      LEFT JOIN users u ON u.id = r.created_by
+      WHERE r.club = ? AND r.player_name = ? AND r.player_surname = ?
+      ORDER BY r.created_at DESC`,
+    [clubName, firstName, lastName],
+  );
+  return rows;
+}
+
 module.exports = {
   createReportsTable,
   createReport,
@@ -192,4 +212,5 @@ module.exports = {
   getReportById,
   updateReport,
   deleteReport,
+  getReportsForPlayerProfile,
 };

@@ -1,0 +1,188 @@
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-8">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <div class="player-avatar" style="<%= player.avatar_color ? 'background:' + player.avatar_color : '' %>">
+            <%= player.initials %>
+          </div>
+          <div>
+            <h2 class="mb-1"><%= player.full_name %></h2>
+            <div class="d-flex gap-2 flex-wrap">
+              <span class="badge text-bg-light">#<%= player.dorsal || '-' %></span>
+              <span class="badge text-bg-light"><%= player.team_name || 'Sin equipo' %></span>
+              <span class="badge text-bg-light"><%= player.category_name || 'Sin categoria' %></span>
+              <span class="badge text-bg-light"><%= player.section_name || 'Sin seccion' %></span>
+              <span class="badge text-bg-primary"><%= player.primary_position || 'Sin posicion' %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="d-flex gap-2 justify-content-lg-end flex-wrap">
+          <button class="btn btn-outline-secondary" type="button" disabled>PDF</button>
+          <a href="/admin/players/<%= player.id %>/edit" class="btn btn-primary">Editar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h3 class="h5 mb-3">Informacion personal</h3>
+        <div class="profile-info-grid">
+          <div><span class="text-muted">Fecha nacimiento</span><strong><%= player.birth_date ? new Date(player.birth_date).toISOString().slice(0, 10) : '-' %></strong></div>
+          <div><span class="text-muted">Edad</span><strong><%= player.age != null ? player.age : '-' %></strong></div>
+          <div><span class="text-muted">Nacionalidad</span><strong><%= player.nationality || '-' %></strong></div>
+          <div><span class="text-muted">Telefono</span><strong><%= player.phone || '-' %></strong></div>
+          <div><span class="text-muted">Email</span><strong><%= player.email || '-' %></strong></div>
+          <div><span class="text-muted">Pie preferente</span><strong><%= player.preferred_foot || '-' %></strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h3 class="h5 mb-3">Contexto futbolistico</h3>
+        <div class="profile-info-grid mb-4">
+          <div><span class="text-muted">Temporada</span><strong><%= player.season_name || (activeSeason ? activeSeason.name : '-') %></strong></div>
+          <div><span class="text-muted">Equipo</span><strong><%= player.team_name || '-' %></strong></div>
+          <div><span class="text-muted">Categoria</span><strong><%= player.category_name || '-' %></strong></div>
+          <div><span class="text-muted">Posicion principal</span><strong><%= player.primary_position || '-' %></strong></div>
+        </div>
+        <div class="pitch-container">
+          <div class="pitch">
+            <div class="pitch-position selected pos-<%= (player.primary_position || 'mc').toLowerCase() %>">
+              <%= player.primary_position || 'MC' %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="h5 mb-0">Informes</h3>
+          <a href="/reports/new" class="btn btn-sm btn-primary">Nuevo informe</a>
+        </div>
+        <% if (!reports.length) { %>
+          <p class="text-muted mb-0">No hay informes asociados a este jugador.</p>
+        <% } else { %>
+          <div class="list-group list-group-flush">
+            <% reports.forEach((report) => { %>
+              <a href="/reports/<%= report.id %>" class="list-group-item list-group-item-action px-0">
+                <div class="d-flex justify-content-between gap-3">
+                  <div>
+                    <div class="fw-semibold">Informe #<%= report.id %></div>
+                    <div class="small text-muted"><%= report.team || '-' %> · <%= report.created_by_name || 'Sin autor' %></div>
+                  </div>
+                  <div class="text-end">
+                    <div><%= report.created_at ? report.created_at.toISOString().slice(0, 10) : '' %></div>
+                    <div class="small text-muted"><%= report.overall_rating != null ? Number(report.overall_rating).toFixed(2) : '-' %></div>
+                  </div>
+                </div>
+              </a>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <h3 class="h5 mb-0">Evaluaciones</h3>
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="/evaluations/new" class="btn btn-sm btn-primary">Nueva evaluación</a>
+            <a href="/evaluations" class="btn btn-sm btn-outline-secondary">Importar Excel</a>
+          </div>
+        </div>
+
+        <% if (!analytics.history.totalEvaluations) { %>
+          <p class="text-muted mb-0">No hay evaluaciones registradas para este jugador.</p>
+        <% } else { %>
+          <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+              <div class="analytics-stat-grid">
+                <div><span class="text-muted">Media global</span><strong><%= analytics.overallAverage.toFixed(2) %></strong></div>
+                <div><span class="text-muted">Total evaluaciones</span><strong><%= analytics.history.totalEvaluations %></strong></div>
+                <div><span class="text-muted">Ultima evaluacion</span><strong><%= analytics.history.lastEvaluationDate ? new Date(analytics.history.lastEvaluationDate).toISOString().slice(0, 10) : '-' %></strong></div>
+              </div>
+              <div class="mt-3">
+                <% analytics.averageByArea.forEach((area) => { %>
+                  <div class="d-flex justify-content-between border-bottom py-2">
+                    <span><%= area.label %></span>
+                    <strong><%= area.average.toFixed(2) %></strong>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="chart-panel">
+                <canvas id="playerRadarChart" height="280"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <% analytics.areaEntries.forEach((area) => { %>
+              <div class="col-md-6">
+                <div class="card border-0 bg-light h-100">
+                  <div class="card-body">
+                    <h4 class="h6 mb-3"><%= area.label %></h4>
+                    <% area.metrics.forEach((metric) => { %>
+                      <div class="d-flex justify-content-between border-bottom py-2">
+                        <span><%= metric.label %></span>
+                        <strong><%= metric.average.toFixed(2) %></strong>
+                      </div>
+                    <% }) %>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (analytics.history.totalEvaluations) { %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      var canvas = document.getElementById('playerRadarChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      var chartData = <%- analytics.radarChartJson %>;
+      new Chart(canvas, {
+        type: 'radar',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              min: 0,
+              max: 10,
+              ticks: { stepSize: 2 }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    })();
+  </script>
+<% } %>

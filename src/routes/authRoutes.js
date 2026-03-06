@@ -10,6 +10,7 @@ const { getClubByCode } = require('../models/clubModel');
 const { getPlayersByTeam } = require('../models/playerModel');
 const { getTeamsByClub } = require('../models/clubTeamModel');
 const { ensureAuth } = require('../middleware/auth');
+const { renderDashboard } = require('../controllers/dashboardController');
 
 const router = express.Router();
 
@@ -232,9 +233,6 @@ router.post('/account', ensureAuth, async (req, res) => {
   }
 });
 
-// Dashboard principal (menú de cards)
-router.get('/dashboard', ensureAuth, (req, res) => {
-  res.render('dashboard');
-});
+router.get('/dashboard', ensureAuth, renderDashboard);
 
 module.exports = router;
