@@ -113,6 +113,10 @@ async function deleteTeamPlayersByTeamId(teamId) {
   await db.query('DELETE FROM team_players WHERE team_id = ?', [teamId]);
 }
 
+async function deleteTeamPlayersByPlayerId(playerId) {
+  await db.query('DELETE FROM team_players WHERE player_id = ?', [playerId]);
+}
+
 module.exports = {
   createTeamPlayersTable,
   upsertTeamPlayer,
@@ -120,4 +124,5 @@ module.exports = {
   getPlayersByTeamId,
   getPlayersByTeamIds,
   deleteTeamPlayersByTeamId,
+  deleteTeamPlayersByPlayerId,
 };

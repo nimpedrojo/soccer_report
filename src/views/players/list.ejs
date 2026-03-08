@@ -26,6 +26,7 @@
           <th>Nombre</th>
           <th>Apellidos</th>
           <th>Equipo</th>
+          <th>Dorsal</th>
           <th>Año nacimiento</th>
           <th>Lateralidad</th>
           <th>Creado</th>
@@ -47,6 +48,7 @@
           <td><%= p.first_name %></td>
           <td><%= p.last_name %></td>
           <td><%= p.relational_team_name || p.team || '' %></td>
+          <td><%= p.dorsal || '' %></td>
           <td><%= p.birth_year || '' %></td>
           <td><%= p.laterality || '' %></td>
           <td>

@@ -5,11 +5,13 @@ const XLSX = require('xlsx');
 const {
   getAllPlayers,
   getPlayerById,
-  updatePlayer,
   deletePlayer,
-  insertPlayer,
 } = require('../models/playerModel');
 const { ensureAdmin } = require('../middleware/auth');
+const {
+  createPlayerWithAssignment,
+  updatePlayerWithAssignment,
+} = require('../services/playerAdminService');
 
 const router = express.Router();
 
@@ -144,7 +146,7 @@ router.post(
         }
 
         // eslint-disable-next-line no-await-in-loop
-        await insertPlayer({
+        await createPlayerWithAssignment({
           firstName: String(firstName).trim(),
           lastName: String(lastName).trim(),
           club,
@@ -194,6 +196,7 @@ router.post('/new', ensureAdmin, async (req, res) => {
     last_name,
     club,
     team,
+    dorsal,
     birth_date,
     birth_year,
     laterality,
@@ -213,11 +216,12 @@ router.post('/new', ensureAdmin, async (req, res) => {
       clubValue = user.default_club || null;
     }
 
-    await insertPlayer({
+    await createPlayerWithAssignment({
       firstName: first_name,
       lastName: last_name,
       club: clubValue,
       team: team || null,
+      dorsal: dorsal || null,
       birthDate: birth_date || null,
       birthYear: birth_year || null,
       laterality: laterality || null,
@@ -259,6 +263,7 @@ router.post('/:id/edit', ensureAdmin, async (req, res) => {
     first_name,
     last_name,
     team,
+    dorsal,
     birth_date,
     birth_year,
     laterality,
@@ -270,10 +275,20 @@ router.post('/:id/edit', ensureAdmin, async (req, res) => {
   }
 
   try {
-    const affected = await updatePlayer(id, {
+    const isSuperAdmin = req.session.user.role === 'superadmin';
+    const clubFilter = isSuperAdmin ? null : req.session.user.default_club || null;
+    const player = await getPlayerById(id, clubFilter);
+    if (!player) {
+      req.flash('error', 'Jugador no encontrado.');
+      return res.redirect('/admin/players');
+    }
+
+    const { affected } = await updatePlayerWithAssignment(id, {
       firstName: first_name,
       lastName: last_name,
+      club: player.club || null,
       team: team || null,
+      dorsal: dorsal || null,
       birthDate: birth_date || null,
       birthYear: birth_year || null,
       laterality: laterality || null,

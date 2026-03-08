@@ -73,14 +73,18 @@ async function insertPlayer({
   lastName,
   club = null,
   team,
+  currentTeamId = null,
   birthDate,
   birthYear,
   laterality,
 }) {
-  await db.query(
-    'INSERT INTO players (first_name, last_name, club, team, birth_date, birth_year, laterality) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [firstName, lastName, club, team, birthDate, birthYear, laterality],
+  const [result] = await db.query(
+    `INSERT INTO players (
+      first_name, last_name, club, team, current_team_id, birth_date, birth_year, laterality
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [firstName, lastName, club, team, currentTeamId, birthDate, birthYear, laterality],
   );
+  return result.insertId;
 }
 
 async function getPlayersByTeam(team, club = null) {
@@ -88,9 +92,12 @@ async function getPlayersByTeam(team, club = null) {
     let sql = `
       SELECT
         p.*,
+        tp.dorsal,
+        tp.positions,
         t.name AS relational_team_name
       FROM players p
       LEFT JOIN teams t ON t.id = p.current_team_id
+      LEFT JOIN team_players tp ON tp.player_id = p.id AND tp.team_id = p.current_team_id
       WHERE COALESCE(t.name, p.team) = ?
     `;
     const params = [team];
@@ -109,9 +116,12 @@ async function getPlayersByTeam(team, club = null) {
   let sql = `
     SELECT
       p.*,
+      tp.dorsal,
+      tp.positions,
       t.name AS relational_team_name
     FROM players p
     LEFT JOIN teams t ON t.id = p.current_team_id
+    LEFT JOIN team_players tp ON tp.player_id = p.id AND tp.team_id = p.current_team_id
   `;
   const params = [];
 
@@ -130,9 +140,12 @@ async function getAllPlayers(club = null) {
   let sql = `
     SELECT
       p.*,
+      tp.dorsal,
+      tp.positions,
       t.name AS relational_team_name
     FROM players p
     LEFT JOIN teams t ON t.id = p.current_team_id
+    LEFT JOIN team_players tp ON tp.player_id = p.id AND tp.team_id = p.current_team_id
   `;
   const params = [];
 
@@ -151,9 +164,12 @@ async function getPlayerById(id, club = null) {
   let sql = `
     SELECT
       p.*,
+      tp.dorsal,
+      tp.positions,
       t.name AS relational_team_name
     FROM players p
     LEFT JOIN teams t ON t.id = p.current_team_id
+    LEFT JOIN team_players tp ON tp.player_id = p.id AND tp.team_id = p.current_team_id
     WHERE p.id = ?
   `;
   const params = [id];
@@ -171,13 +187,16 @@ async function updatePlayer(id, {
   firstName,
   lastName,
   team,
+  currentTeamId = null,
   birthDate,
   birthYear,
   laterality,
 }) {
   const [result] = await db.query(
-    'UPDATE players SET first_name = ?, last_name = ?, team = ?, birth_date = ?, birth_year = ?, laterality = ? WHERE id = ?',
-    [firstName, lastName, team, birthDate, birthYear, laterality, id],
+    `UPDATE players
+     SET first_name = ?, last_name = ?, team = ?, current_team_id = ?, birth_date = ?, birth_year = ?, laterality = ?
+     WHERE id = ?`,
+    [firstName, lastName, team, currentTeamId, birthDate, birthYear, laterality, id],
   );
   return result.affectedRows;
 }
