@@ -157,34 +157,48 @@
       >
     </div>
     <div class="col-md-6 d-flex align-items-center justify-content-center">
-      <div class="pitch-container mt-2">
-        <div class="pitch">
-          <div
-            class="pitch-position pos-por"
-            data-position-code="POR"
-          >
-            POR
+      <div class="report-pitch-panel mt-2">
+        <div class="team-detail-panel__heading mb-3">Campograma</div>
+        <div class="report-pitch">
+          <div class="report-pitch__field">
+            <svg class="report-pitch__svg" viewBox="0 0 320 440" aria-hidden="true">
+              <defs>
+                <linearGradient id="reportPitchGrass" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#1d7a3f" />
+                  <stop offset="100%" stop-color="#166236" />
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="320" height="440" rx="16" fill="url(#reportPitchGrass)" />
+              <rect x="14" y="14" width="292" height="412" rx="10" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="3" />
+              <line x1="160" y1="14" x2="160" y2="426" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <line x1="14" y1="220" x2="306" y2="220" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <circle cx="160" cy="220" r="34" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <circle cx="160" cy="220" r="2.5" fill="rgba(255,255,255,0.92)" />
+              <rect x="72" y="14" width="176" height="74" rx="2" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <rect x="112" y="14" width="96" height="28" rx="2" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <circle cx="160" cy="88" r="2.5" fill="rgba(255,255,255,0.92)" />
+              <path d="M128 88a32 32 0 0 0 64 0" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <rect x="72" y="352" width="176" height="74" rx="2" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <rect x="112" y="398" width="96" height="28" rx="2" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+              <circle cx="160" cy="352" r="2.5" fill="rgba(255,255,255,0.92)" />
+              <path d="M128 352a32 32 0 0 1 64 0" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="2.5" />
+            </svg>
+            <div class="report-pitch__marker pos-del" data-position-code="DEL">DEL</div>
+            <div class="report-pitch__marker pos-ei" data-position-code="EI">EI</div>
+            <div class="report-pitch__marker pos-mp" data-position-code="MP">MP</div>
+            <div class="report-pitch__marker pos-ed" data-position-code="ED">ED</div>
+            <div class="report-pitch__marker pos-ii" data-position-code="II">II</div>
+            <div class="report-pitch__marker pos-mc" data-position-code="MC">MC</div>
+            <div class="report-pitch__marker pos-id" data-position-code="ID">ID</div>
+            <div class="report-pitch__marker pos-li" data-position-code="LI">LI</div>
+            <div class="report-pitch__marker pos-central" data-position-code="DEF">DEF</div>
+            <div class="report-pitch__marker pos-ld" data-position-code="LD">LD</div>
+            <div class="report-pitch__marker pos-por" data-position-code="POR">POR</div>
           </div>
-          <div
-            class="pitch-position pos-central"
-            data-position-code="DEF"
-          >
-            DEF
-          </div>
-          <div class="pitch-position pos-ld" data-position-code="LD">LD</div>
-          <div class="pitch-position pos-li" data-position-code="LI">LI</div>
-          <div class="pitch-position pos-mc" data-position-code="MC">MC</div>
-          <div class="pitch-position pos-id" data-position-code="ID">ID</div>
-          <div class="pitch-position pos-ii" data-position-code="II">II</div>
-          <div class="pitch-position pos-mp" data-position-code="MP">MP</div>
-          <div class="pitch-position pos-ed" data-position-code="ED">ED</div>
-          <div class="pitch-position pos-ei" data-position-code="EI">EI</div>
-          <div
-            class="pitch-position pos-del"
-            data-position-code="DEL"
-          >
-            DEL
-          </div>
+        </div>
+        <div class="report-pitch__legend">
+          <span class="report-pitch__legend-item is-primary">Posición principal</span>
+          <span class="report-pitch__legend-item is-secondary">Secundarias</span>
         </div>
       </div>
     </div>
@@ -877,8 +891,11 @@
       updateOverall();
 
       function updatePitch() {
-        const selectedCodes = [
-          document.querySelector('input[name="pos1"]'),
+        const primary = document
+          .querySelector('input[name="pos1"]')
+          ?.value.trim()
+          .toUpperCase();
+        const secondaryCodes = [
           document.querySelector('input[name="pos2"]'),
           document.querySelector('input[name="pos3"]'),
           document.querySelector('input[name="pos4"]'),
@@ -887,16 +904,19 @@
           .map((el) => el.value.trim().toUpperCase())
           .filter((v) => v);
 
-        document
-          .querySelectorAll('[data-position-code]')
-          .forEach((el) => {
-            const code = (el.dataset.positionCode || '').toUpperCase();
-            if (selectedCodes.includes(code)) {
-              el.classList.add('selected');
-            } else {
-              el.classList.remove('selected');
-            }
-          });
+        document.querySelectorAll('[data-position-code]').forEach((el) => {
+          const code = (el.dataset.positionCode || '').toUpperCase();
+          el.classList.remove('selected', 'secondary');
+
+          if (primary && code === primary) {
+            el.classList.add('selected');
+            return;
+          }
+
+          if (secondaryCodes.includes(code)) {
+            el.classList.add('secondary');
+          }
+        });
       }
 
       ['pos1', 'pos2', 'pos3', 'pos4'].forEach((name) => {

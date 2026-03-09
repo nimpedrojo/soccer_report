@@ -28,6 +28,64 @@ function normalizePlayerPreview(player) {
   };
 }
 
+const POSITION_ALIAS_MAP = {
+  PORTERO: 'POR',
+  POR: 'POR',
+  DC: 'CENTRAL',
+  DFC: 'CENTRAL',
+  CENTRAL: 'CENTRAL',
+  LD: 'LD',
+  LI: 'LI',
+  MC: 'MC',
+  MCD: 'MC',
+  MCO: 'MP',
+  MP: 'MP',
+  MEDIAPUNTA: 'MP',
+  ID: 'ID',
+  II: 'II',
+  ED: 'ED',
+  EI: 'EI',
+  'EXTREMO DERECHO': 'ED',
+  'EXTREMO IZQUIERDO': 'EI',
+  DEL: 'DEL',
+  DELANTERO: 'DEL',
+};
+
+const SUPPORTED_POSITIONS = ['POR', 'LI', 'CENTRAL', 'LD', 'MC', 'II', 'MP', 'ID', 'EI', 'DEL', 'ED'];
+
+function normalizePositions(positionsValue) {
+  if (!positionsValue) {
+    return [];
+  }
+
+  return Array.from(new Set(String(positionsValue)
+    .split(',')
+    .map((position) => position.trim().toUpperCase())
+    .map((position) => POSITION_ALIAS_MAP[position] || position)
+    .filter((position) => SUPPORTED_POSITIONS.includes(position))));
+}
+
+function buildCoverageSummary(players) {
+  const counts = SUPPORTED_POSITIONS.reduce((acc, position) => {
+    acc[position] = 0;
+    return acc;
+  }, {});
+
+  players.forEach((player) => {
+    normalizePositions(player.positions).forEach((position) => {
+      counts[position] += 1;
+    });
+  });
+
+  return SUPPORTED_POSITIONS
+    .map((position) => ({
+      code: position,
+      count: counts[position],
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
+}
+
 async function requireClubForUser(user) {
   if (!user || !user.default_club) {
     return null;
@@ -121,18 +179,26 @@ async function getTeamDetail(teamId) {
     return null;
   }
   const players = await getPlayersByTeamId(teamId);
-  return {
-    ...team,
-    players: players.map((player) => ({
+  const normalizedPlayers = players.map((player) => {
+    const positionsList = normalizePositions(player.positions || '');
+    return {
       id: player.player_id,
       dorsal: player.dorsal || '',
       first_name: player.first_name,
       last_name: player.last_name,
       full_name: `${player.first_name} ${player.last_name}`.trim(),
       positions: player.positions || '',
+      positions_list: positionsList,
+      primary_position: positionsList[0] || '',
       laterality: player.laterality || '',
       birth_year: player.birth_year || null,
-    })),
+    };
+  });
+
+  return {
+    ...team,
+    players: normalizedPlayers,
+    coverageSummary: buildCoverageSummary(normalizedPlayers),
   };
 }
 
