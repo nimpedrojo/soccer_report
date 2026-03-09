@@ -14,7 +14,7 @@ function getSeasonDateRange(seasonName) {
 
 async function getDashboardMetrics(clubId, activeSeason) {
   const seasonRange = getSeasonDateRange(activeSeason ? activeSeason.name : null);
-  const params = [clubId, clubId, clubId];
+  const params = [clubId, clubId, clubId, clubId];
   let reportsSeasonClause = '';
 
   if (seasonRange) {
@@ -25,7 +25,13 @@ async function getDashboardMetrics(clubId, activeSeason) {
 
   const [rows] = await db.query(
     `SELECT
-        (SELECT COUNT(*) FROM players p WHERE p.club_id = ? AND p.is_active = 1) AS total_active_players,
+        (SELECT COUNT(*)
+         FROM players p
+         WHERE p.is_active = 1
+           AND (
+             p.club_id = ?
+             OR p.club = (SELECT name FROM clubs WHERE id = ? LIMIT 1)
+           )) AS total_active_players,
         (SELECT COUNT(*) FROM teams t INNER JOIN seasons s ON s.id = t.season_id WHERE t.club_id = ? AND s.is_active = 1) AS active_teams,
         (SELECT COUNT(*)
          FROM reports r

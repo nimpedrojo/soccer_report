@@ -26,28 +26,34 @@
 <% } else { %>
   <div class="row g-4 mb-4">
     <div class="col-md-6 col-xl-3">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <div class="small text-muted text-uppercase mb-2">Jugadores registrados</div>
-          <div class="display-6 fw-semibold"><%= dashboard.metrics.totalActivePlayers %></div>
+      <a href="/admin/players" class="text-decoration-none text-reset">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="small text-muted text-uppercase mb-2">Jugadores registrados</div>
+            <div class="display-6 fw-semibold"><%= dashboard.metrics.totalActivePlayers %></div>
+          </div>
         </div>
-      </div>
+      </a>
     </div>
     <div class="col-md-6 col-xl-3">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <div class="small text-muted text-uppercase mb-2">Equipos activos</div>
-          <div class="display-6 fw-semibold"><%= dashboard.metrics.activeTeams %></div>
+      <a href="/teams" class="text-decoration-none text-reset">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="small text-muted text-uppercase mb-2">Equipos activos</div>
+            <div class="display-6 fw-semibold"><%= dashboard.metrics.activeTeams %></div>
+          </div>
         </div>
-      </div>
+      </a>
     </div>
     <div class="col-md-6 col-xl-3">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <div class="small text-muted text-uppercase mb-2">Informes emitidos</div>
-          <div class="display-6 fw-semibold"><%= dashboard.metrics.reportsInActiveSeason %></div>
+      <a href="/reports" class="text-decoration-none text-reset">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="small text-muted text-uppercase mb-2">Informes emitidos</div>
+            <div class="display-6 fw-semibold"><%= dashboard.metrics.reportsInActiveSeason %></div>
+          </div>
         </div>
-      </div>
+      </a>
     </div>
     <div class="col-md-6 col-xl-3">
       <div class="card shadow-sm h-100">
