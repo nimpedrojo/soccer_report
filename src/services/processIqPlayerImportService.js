@@ -48,8 +48,42 @@ function extractText(item, keys) {
   return '';
 }
 
+function normalizePlayerDetailPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return {};
+  }
+
+  const detail = payload.item && typeof payload.item === 'object'
+    ? payload.item
+    : (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data) ? payload.data : payload);
+
+  const fields = detail.fields && typeof detail.fields === 'object' && !Array.isArray(detail.fields)
+    ? detail.fields
+    : {};
+
+  return {
+    ...fields,
+    ...detail,
+  };
+}
+
 function splitName(fullName) {
-  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  const normalized = String(fullName || '').trim();
+  if (!normalized) {
+    return { firstName: '', lastName: '' };
+  }
+
+  if (normalized.includes(',')) {
+    const [lastNamePart, firstNamePart] = normalized.split(',').map((part) => part.trim()).filter(Boolean);
+    if (firstNamePart || lastNamePart) {
+      return {
+        firstName: firstNamePart || '',
+        lastName: lastNamePart || '',
+      };
+    }
+  }
+
+  const parts = normalized.split(/\s+/).filter(Boolean);
   if (!parts.length) {
     return { firstName: '', lastName: '' };
   }
@@ -67,10 +101,10 @@ function normalizeFoot(value) {
   if (!normalized) {
     return null;
   }
-  if (['d', 'der', 'derecha', 'right'].includes(normalized)) {
+  if (['d', 'der', 'derecha', 'derecho', 'right'].includes(normalized)) {
     return 'DER';
   }
-  if (['i', 'izq', 'izquierda', 'left'].includes(normalized)) {
+  if (['i', 'izq', 'izquierda', 'izquierdo', 'left'].includes(normalized)) {
     return 'IZQ';
   }
   if (['ambidiestro', 'ambi', 'both'].includes(normalized)) {
@@ -79,21 +113,51 @@ function normalizeFoot(value) {
   return String(value || '').trim().slice(0, 20) || null;
 }
 
+function normalizeBirthDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day}`;
+  }
+
+  return raw;
+}
+
 function mapPlayerDetail(detail, playerRef, team) {
-  const fullName = extractText(detail, ['name', 'fullName', 'full_name', 'displayName']);
+  const normalizedDetail = normalizePlayerDetailPayload(detail);
+  const fullName = extractText(normalizedDetail, ['name', 'fullName', 'full_name', 'displayName'])
+    || extractText(playerRef, ['fullName', 'full_name', 'name', 'displayName']);
   const split = splitName(fullName);
-  const firstName = extractText(detail, ['firstName', 'first_name', 'givenName']) || split.firstName;
-  const lastName = extractText(detail, ['lastName', 'last_name', 'surname', 'familyName']) || split.lastName;
-  const birthDate = extractText(detail, ['birthDate', 'birth_date', 'dateOfBirth']) || null;
-  const birthYearRaw = extractText(detail, ['birthYear', 'birth_year']);
+  const firstName = extractText(normalizedDetail, ['firstName', 'first_name', 'givenName', 'shortName', 'short_name'])
+    || extractText(playerRef, ['shortName', 'short_name'])
+    || split.firstName;
+  const lastName = extractText(normalizedDetail, ['lastName', 'last_name', 'surname', 'familyName']) || split.lastName;
+  const birthDate = normalizeBirthDate(
+    extractText(normalizedDetail, ['birthDate', 'birth_date', 'dateOfBirth', 'fecha_nacimiento']),
+  );
+  const birthYearRaw = extractText(normalizedDetail, ['birthYear', 'birth_year']);
   const birthYear = birthYearRaw
     ? Number.parseInt(birthYearRaw, 10)
-    : (birthDate ? Number.parseInt(birthDate.slice(0, 4), 10) : null);
+    : (birthDate
+      ? Number.parseInt(
+        /^\d{2}\/\d{2}\/\d{4}$/.test(birthDate) ? birthDate.slice(-4) : birthDate.slice(0, 4),
+        10,
+      )
+      : null);
   const dorsal = extractText(playerRef, ['dorsal', 'shirtNumber', 'number'])
-    || extractText(detail, ['dorsal', 'shirtNumber', 'number'])
+    || extractText(normalizedDetail, ['dorsal', 'shirtNumber', 'number'])
     || null;
   const positions = extractText(playerRef, ['positions', 'position'])
-    || extractText(detail, ['positions', 'position', 'primaryPosition'])
+    || extractText(normalizedDetail, ['positions', 'position', 'primaryPosition', 'posiciones'])
     || null;
 
   return {
@@ -105,11 +169,11 @@ function mapPlayerDetail(detail, playerRef, team) {
     currentTeamId: team.id,
     birthDate,
     birthYear: Number.isNaN(birthYear) ? null : birthYear,
-    laterality: normalizeFoot(extractText(detail, ['laterality', 'dominantFoot', 'foot', 'preferredFoot'])),
-    preferredFoot: normalizeFoot(extractText(detail, ['preferredFoot', 'dominantFoot', 'foot'])),
-    phone: extractText(detail, ['phone', 'phoneNumber']) || null,
-    email: extractText(detail, ['email']) || null,
-    nationality: extractText(detail, ['nationality', 'country']) || null,
+    laterality: normalizeFoot(extractText(normalizedDetail, ['laterality', 'dominantFoot', 'foot', 'preferredFoot', 'lateralidad'])),
+    preferredFoot: normalizeFoot(extractText(normalizedDetail, ['preferredFoot', 'dominantFoot', 'foot', 'lateralidad'])),
+    phone: extractText(normalizedDetail, ['phone', 'phoneNumber', 'teléfonos', 'telefonos']) || null,
+    email: extractText(normalizedDetail, ['email']) || null,
+    nationality: extractText(normalizedDetail, ['nationality', 'country', 'nacionalidad']) || null,
     dorsal,
     positions,
   };
@@ -152,10 +216,7 @@ async function importPlayersFromProcessIq(team, credentials) {
     try {
       // eslint-disable-next-line no-await-in-loop
       const detailPayload = await fetchProcessIqJsonWithToken(`/players/${encodeURIComponent(playerId)}`, token);
-      const detail = detailPayload && detailPayload.data && !Array.isArray(detailPayload.data)
-        ? detailPayload.data
-        : detailPayload;
-      const mapped = mapPlayerDetail(detail, playerRef, team);
+      const mapped = mapPlayerDetail(detailPayload, playerRef, team);
       // eslint-disable-next-line no-await-in-loop
       const existing = await findPlayerBySourceExternalId('processiq', playerId);
 

@@ -1528,6 +1528,101 @@ describe('Aplicación SoccerReport', () => {
     expect(links[0].positions).toBe('DEL');
   });
 
+  test('importa correctamente jugadores cuando el detalle viene en formato middleware con item.fields', async () => {
+    const context = await createTeamContext('Club Teams ProcessIQ Middleware Shape');
+    const teamId = randomUUID();
+    await db.query(
+      `INSERT INTO teams (id, club_id, season_id, section_id, category_id, name, source, external_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        teamId,
+        context.club.id,
+        context.season.id,
+        context.masculina.id,
+        context.infantil.id,
+        'Infantil API',
+        'processiq',
+        'ext-team-middleware',
+      ],
+    );
+
+    const agent = request.agent(app);
+    await db.query(
+      'UPDATE users SET processiq_username = ?, processiq_password = ? WHERE id = ?',
+      ['processiq-user', 'processiq-pass', context.admin.id],
+    );
+    await agent.post('/login').send({ email: context.admin.email, password: 'password123' });
+
+    const originalFetch = global.fetch;
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ accessToken: 'token-middleware' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              id: 'ext-team-middleware',
+              name: 'Infantil API',
+              players: [
+                {
+                  id: 'player-middleware-1',
+                  shortName: 'MARIO',
+                  fullName: 'GARCIA LOPEZ, MARIO',
+                  dorsal: '8',
+                  positions: 'MC, MP',
+                },
+              ],
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          item: {
+            id: 'player-middleware-1',
+            shortName: 'MARIO',
+            fullName: 'GARCIA LOPEZ, MARIO',
+            fields: {
+              fecha_nacimiento: '01/01/2012',
+              lateralidad: 'Derecho',
+              nacionalidad: 'Española',
+              teléfonos: '600123123',
+              posiciones: 'MC, MP',
+            },
+          },
+          meta: {
+            source: 'gesdep',
+          },
+        }),
+      });
+
+    const res = await agent.post(`/teams/${teamId}/import-players/processiq`).send();
+    global.fetch = originalFetch;
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(`/teams/${teamId}`);
+
+    const [players] = await db.query(
+      `SELECT first_name, last_name, birth_year, laterality, nationality, phone, external_id
+       FROM players
+       WHERE club_id = ? AND external_id = ?`,
+      [context.club.id, 'player-middleware-1'],
+    );
+    expect(players).toHaveLength(1);
+    expect(players[0].first_name).toBe('MARIO');
+    expect(players[0].last_name).toBe('GARCIA LOPEZ');
+    expect(players[0].birth_year).toBe(2012);
+    expect(players[0].laterality).toBe('DER');
+    expect(players[0].nationality).toBe('Española');
+    expect(players[0].phone).toBe('600123123');
+  });
+
   test('el listado de plantillas muestra acción de importar jugadores para equipos ProcessIQ', async () => {
     const context = await createTeamContext('Club Teams ProcessIQ Button');
     const teamId = randomUUID();
