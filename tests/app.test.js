@@ -1622,8 +1622,8 @@ describe('Aplicación SoccerReport', () => {
       [context.club.id, 'player-middleware-1'],
     );
     expect(players).toHaveLength(1);
-    expect(players[0].first_name).toBe('MARIO');
-    expect(players[0].last_name).toBe('GARCIA LOPEZ');
+    expect(players[0].first_name).toBe('Mario');
+    expect(players[0].last_name).toBe('Garcia Lopez');
     expect(players[0].birth_year).toBe(2012);
     expect(players[0].laterality).toBe('DER');
     expect(players[0].nationality).toBe('Española');
@@ -1637,6 +1637,94 @@ describe('Aplicación SoccerReport', () => {
       minutes: 1460,
       goals: 9,
     });
+  });
+
+  test('conserva apellidos completos cuando ProcessIQ devuelve shortName y fullName sin coma', async () => {
+    const context = await createTeamContext('Club Teams ProcessIQ Full Surname');
+    const teamId = randomUUID();
+    await db.query(
+      `INSERT INTO teams (id, club_id, season_id, section_id, category_id, name, source, external_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        teamId,
+        context.club.id,
+        context.season.id,
+        context.masculina.id,
+        context.infantil.id,
+        'Infantil API',
+        'processiq',
+        'ext-team-full-surname',
+      ],
+    );
+
+    const agent = request.agent(app);
+    await db.query(
+      'UPDATE users SET processiq_username = ?, processiq_password = ? WHERE id = ?',
+      ['processiq-user', 'processiq-pass', context.admin.id],
+    );
+    await agent.post('/login').send({ email: context.admin.email, password: 'password123' });
+
+    const originalFetch = global.fetch;
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ accessToken: 'token-full-surname' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              id: 'ext-team-full-surname',
+              name: 'Infantil API',
+              players: [
+                {
+                  id: 'player-full-surname-1',
+                  shortName: 'PEDRO',
+                  fullName: 'Pedro Lafuente Ayllon',
+                  dorsal: '13',
+                  positions: 'POR',
+                },
+              ],
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          item: {
+            id: 'player-full-surname-1',
+            shortName: 'PEDRO',
+            fullName: 'Pedro Lafuente Ayllon',
+            fields: {
+              fecha_nacimiento: '20/02/2012',
+              lateralidad: 'Derecho',
+              nacionalidad: 'ESPAÑOLA',
+              teléfonos: '645977771',
+              posiciones: 'Portero',
+            },
+          },
+        }),
+      });
+
+    const res = await agent.post(`/teams/${teamId}/import-players/processiq`).send();
+    global.fetch = originalFetch;
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe(`/teams/${teamId}`);
+
+    const [players] = await db.query(
+      `SELECT first_name, last_name, external_id
+       FROM players
+       WHERE club_id = ? AND external_id = ?`,
+      [context.club.id, 'player-full-surname-1'],
+    );
+    expect(players).toHaveLength(1);
+    expect(players[0].first_name).toBe('Pedro');
+    expect(players[0].last_name).toBe('Lafuente Ayllon');
   });
 
   test('permite editar manualmente las estadisticas de un jugador', async () => {

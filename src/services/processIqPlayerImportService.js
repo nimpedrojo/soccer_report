@@ -70,7 +70,11 @@ function normalizePlayerDetailPayload(payload) {
 function splitName(fullName) {
   const normalized = String(fullName || '').trim();
   if (!normalized) {
-    return { firstName: '', lastName: '' };
+    return {
+      firstName: '',
+      lastName: '',
+      usedCommaFormat: false,
+    };
   }
 
   if (normalized.includes(',')) {
@@ -79,20 +83,30 @@ function splitName(fullName) {
       return {
         firstName: firstNamePart || '',
         lastName: lastNamePart || '',
+        usedCommaFormat: true,
       };
     }
   }
 
   const parts = normalized.split(/\s+/).filter(Boolean);
   if (!parts.length) {
-    return { firstName: '', lastName: '' };
+    return {
+      firstName: '',
+      lastName: '',
+      usedCommaFormat: false,
+    };
   }
   if (parts.length === 1) {
-    return { firstName: parts[0], lastName: '-' };
+    return {
+      firstName: parts[0],
+      lastName: '-',
+      usedCommaFormat: false,
+    };
   }
   return {
     firstName: parts.slice(0, -1).join(' '),
     lastName: parts.slice(-1).join(' '),
+    usedCommaFormat: false,
   };
 }
 
@@ -146,6 +160,26 @@ function parseStatNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function toTitleCase(value) {
+  return String(value || '')
+    .toLocaleLowerCase('es-ES')
+    .replace(/\b([\p{L}\p{M}])/gu, (match) => match.toLocaleUpperCase('es-ES'));
+}
+
+function normalizeCasingIfUppercase(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  const hasLetters = /[\p{L}\p{M}]/u.test(raw);
+  if (!hasLetters || raw !== raw.toLocaleUpperCase('es-ES')) {
+    return raw;
+  }
+
+  return toTitleCase(raw);
+}
+
 function extractPlayerStats(detail) {
   return {
     callups: parseStatNumber(extractText(detail, ['estadistica_conv.', 'estadistica_convocados', 'convocatorias'])),
@@ -163,10 +197,27 @@ function mapPlayerDetail(detail, playerRef, team) {
   const fullName = extractText(normalizedDetail, ['name', 'fullName', 'full_name', 'displayName'])
     || extractText(playerRef, ['fullName', 'full_name', 'name', 'displayName']);
   const split = splitName(fullName);
-  const firstName = extractText(normalizedDetail, ['firstName', 'first_name', 'givenName', 'shortName', 'short_name'])
-    || extractText(playerRef, ['shortName', 'short_name'])
-    || split.firstName;
-  const lastName = extractText(normalizedDetail, ['lastName', 'last_name', 'surname', 'familyName']) || split.lastName;
+  const explicitFirstName = extractText(normalizedDetail, ['firstName', 'first_name', 'givenName']);
+  const shortName = extractText(normalizedDetail, ['shortName', 'short_name'])
+    || extractText(playerRef, ['shortName', 'short_name']);
+  const explicitLastName = extractText(normalizedDetail, ['lastName', 'last_name', 'surname', 'familyName']);
+  const normalizedShortName = normalizeText(shortName);
+  const normalizedSplitFirstName = normalizeText(split.firstName);
+  const shortNameMatchesSplitPrefix = normalizedShortName
+    && normalizedSplitFirstName
+    && (normalizedSplitFirstName === normalizedShortName
+      || normalizedSplitFirstName.startsWith(`${normalizedShortName} `));
+  const firstName = explicitFirstName || shortName || split.firstName;
+  const lastName = explicitLastName
+    || (
+      shortName
+      && !explicitFirstName
+      && !split.usedCommaFormat
+      && shortNameMatchesSplitPrefix
+      && normalizedDetail.fullName
+      ? fullName.slice(shortName.length).trim() || split.lastName
+      : split.lastName
+    );
   const birthDate = normalizeBirthDate(
     extractText(normalizedDetail, ['birthDate', 'birth_date', 'dateOfBirth', 'fecha_nacimiento']),
   );
@@ -187,8 +238,8 @@ function mapPlayerDetail(detail, playerRef, team) {
     || null;
 
   return {
-    firstName: firstName || 'Jugador',
-    lastName: lastName || '-',
+    firstName: normalizeCasingIfUppercase(firstName || 'Jugador'),
+    lastName: normalizeCasingIfUppercase(lastName || '-'),
     club: team.club_name,
     clubId: team.club_id,
     team: team.name,
