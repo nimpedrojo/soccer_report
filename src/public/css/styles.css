@@ -536,25 +536,25 @@ body {
   --pitch-pos-del-top: 14%;
   --pitch-pos-del-left: 50%;
   --pitch-pos-ei-top: 24%;
-  --pitch-pos-ei-left: 15%;
+  --pitch-pos-ei-left: 19%;
   --pitch-pos-mp-top: 34%;
-  --pitch-pos-mp-left: 50%;
+  --pitch-pos-mp-left: 51%;
   --pitch-pos-ed-top: 24%;
-  --pitch-pos-ed-left: 85%;
+  --pitch-pos-ed-left: 81%;
   --pitch-pos-ii-top: 47%;
-  --pitch-pos-ii-left: 28%;
+  --pitch-pos-ii-left: 31%;
   --pitch-pos-mc-top: 56%;
-  --pitch-pos-mc-left: 50%;
+  --pitch-pos-mc-left: 51%;
   --pitch-pos-id-top: 47%;
-  --pitch-pos-id-left: 72%;
+  --pitch-pos-id-left: 68%;
   --pitch-pos-li-top: 75%;
-  --pitch-pos-li-left: 17%;
+  --pitch-pos-li-left: 21%;
   --pitch-pos-central-top: 81%;
-  --pitch-pos-central-left: 50%;
+  --pitch-pos-central-left: 51%;
   --pitch-pos-ld-top: 75%;
-  --pitch-pos-ld-left: 83%;
+  --pitch-pos-ld-left: 79%;
   --pitch-pos-por-top: 90%;
-  --pitch-pos-por-left: 50%;
+  --pitch-pos-por-left: 51%;
 }
 
 .team-coverage-pitch__marker strong {
